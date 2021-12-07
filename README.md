@@ -7,11 +7,9 @@ The aim of this README is to describe in detail the setup and image processing p
 The figure below illustrates the (a) SmartKC system setup, (b) LED light arrangement, (c) 3D-printed conical placido clip-on attachment, (d) image capture of a subject’s eye, and (e) captured image of the cornea with
 placido disc reflection (called mires).
 
-<center>
-
-![Overview](../readme_images/attachment.PNG =720x350)
-
-</center>
+<p align='center'>
+      <img src="./readme_images/attachment.PNG" width="720" height="350" title="Overview">
+</p>
 
 ## Dependencies
 
@@ -42,11 +40,11 @@ These are all easily installable via, e.g., `pip install numpy`. Any reasonably 
 
 ## Image Processing Pipeline Overview
 
-<center>
+<p align='center'>
+      <img src="./readme_images/processing_pipeline.PNG" width="1000" height="480" title="Overview">
+</p>
 
-![Overview](../readme_images/processing_pipeline.PNG =1000x480)
 
-</center>
 
 The image analysis pipeline takes as input the image collected via our setup (3D attachment and smartphone), and outputs the corneal topography heatmaps along with quantitative values. The analysis pipeline first performs **pre-processing** (*image cropping, mire segmentation, and center detection*) on the input image. The next step is to get the **mire-placido mapping**, this is followed by estimation of **placido ring location and working distance**. The final corneal topography is estimated by running the **Arc-Step method** followed by zernike polynomial based smoothening.
 
@@ -99,11 +97,9 @@ error = corneal_top_obj.generate_topography_maps(
 
 ## Sample outputs
 
-<center>
-
-![Overview](../readme_images/qual_results.PNG =800x430)
-
-</center>
+<p align='center'>
+      <img src="./readme_images/qual_results.PNG" width="800" height="430" title="Overview">
+</p>
 
 ## About the code:
 
