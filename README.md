@@ -236,6 +236,9 @@ zernike_smoothening(
 
 **Note** : The image processing pipeline for now only supports images with "jpg" format, and resolution of `3000x4000` pixels. For zoomed-in images please re-scale and pad accordingly before running the pipeline.
 
+# Disclaimer
+`This is a research project and not an approved medical software and should not be used for diagnostic purposes.`
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
