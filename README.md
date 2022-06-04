@@ -236,6 +236,15 @@ zernike_smoothening(
 
 **Note** : The image processing pipeline for now only supports images with "jpg" format, and resolution of `3000x4000` pixels. For zoomed-in images please re-scale and pad accordingly before running the pipeline.
 
+## SmartKC Mobile App
+
+* Please find the source for the SmartKC Android Mobile App that was used as part of the study here: `SmartKC-A-Smartphone-based-Corneal-Topographer/mobile_app/smartkc_mobile_app_src`.
+* We also have placed the `.apk` file here: `SmartKC-A-Smartphone-based-Corneal-Topographer/mobile_app/smartkc_mobile_app.apk`.
+
+## SmartKC 3D Attachment
+* The 3D STL files for the Placido attachment and base clip are located at: `SmartKC-A-Smartphone-based-Corneal-Topographer/3d_attachment/placido_head.stl` and `SmartKC-A-Smartphone-based-Corneal-Topographer/3d_attachment/base_clip.stl` respectively.
+
+
 # Disclaimer
 `This is a research project and not an approved medical software and should not be used for diagnostic purposes.`
 
