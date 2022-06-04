@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextView
+        android:id="@+id/TextDataTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="Diagnosis Ground Truth Data"
+        android:textColor="#000000"
+        android:textSize="20sp"
+        android:layout_marginBottom="16sp"
+        android:layout_marginTop="16sp"/>
+
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal"
+            android:layout_margin="10sp">
+
+            <TextView
+                android:id="@+id/RightSph"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10sp"
+                android:text="Right Sph"
+                android:textColor="#03A9F4"
+                android:textSize="16sp" />
+
+
+            <TextView
+                android:id="@+id/RightCyl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10sp"
+                android:text="Right Cyl"
+                android:textColor="#03A9F4"
+                android:textSize="16sp" />
+
+
+            <TextView
+                android:id="@+id/RightAxis"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10sp"
+                android:text="Right Axis"
+                android:textColor="#03A9F4"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/RightKC"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10sp"
+                android:text="Keratoconus?"
+                android:textColor="#03A9F4"
+                android:textSize="16sp"
+                />
+
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal"
+            android:layout_margin="10sp">
+
+            <EditText
+                android:id="@+id/EditRightSph"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal|numberSigned"
+                android:textColor="#000000"
+                android:layout_marginBottom="16sp"
+                android:layout_marginTop="16sp"
+                android:nextFocusDown="@+id/EditRightCyl"/>
+
+
+            <EditText
+                android:id="@+id/EditRightCyl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal|numberSigned"
+                android:textColor="#000000"
+                android:layout_marginBottom="16sp"
+                android:layout_marginTop="16sp"
+                android:nextFocusDown="@+id/EditRightAxis"/>
+
+
+            <EditText
+                android:id="@+id/EditRightAxis"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal|numberSigned"
+                android:textColor="#000000"
+                android:layout_marginBottom="16sp"
+                android:layout_marginTop="16sp"
+                android:nextFocusDown="@+id/EditRightKC"/>
+
+            <EditText
+                android:id="@+id/EditRightKC"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:textColor="#000000"
+                android:layout_marginBottom="16sp"
+                android:layout_marginTop="16sp"
+                android:nextFocusDown="@+id/EditLeftSph"/>
+        </TableRow>
+    </TableLayout>
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal"
+            android:layout_margin="10sp">
+
+            <TextView
+                android:id="@+id/LeftSph"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10sp"
+                android:text="Left Sph"
+                android:textColor="#03A9F4"
+                android:textSize="16sp"
+                />
+
+
+            <TextView
+                android:id="@+id/LeftCyl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10sp"
+                android:text="Left Cyl"
+                android:textColor="#03A9F4"
+                android:textSize="16sp" />
+
+
+            <TextView
+                android:id="@+id/LeftAxis"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10sp"
+                android:text="Left Axis"
+                android:textColor="#03A9F4"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/LeftKC"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10sp"
+                android:text="Keratoconus?"
+                android:textColor="#03A9F4"
+                android:textSize="16sp" />
+
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal"
+            android:layout_margin="10sp">
+
+            <EditText
+                android:id="@+id/EditLeftSph"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal|numberSigned"
+                android:textColor="#000000"
+                android:layout_marginBottom="16sp"
+                android:layout_marginTop="16sp"
+                android:nextFocusDown="@+id/EditLeftCyl"/>
+
+
+            <EditText
+                android:id="@+id/EditLeftCyl"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal|numberSigned"
+                android:textColor="#000000"
+                android:layout_marginBottom="16sp"
+                android:layout_marginTop="16sp"
+                android:nextFocusDown="@+id/EditLeftAxis"/>
+
+            <EditText
+                android:id="@+id/EditLeftAxis"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal|numberSigned"
+                android:textColor="#000000"
+                android:layout_marginBottom="16sp"
+                android:layout_marginTop="16sp"
+                android:nextFocusDown="@+id/EditLeftKC"/>
+
+            <EditText
+                android:id="@+id/EditLeftKC"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:textColor="#000000"
+                android:layout_marginBottom="16sp"
+                android:layout_marginTop="16sp"/>
+        </TableRow>
+
+    </TableLayout>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="32sp"
+        android:layout_marginTop="32sp">
+
+        <Button
+        android:id="@+id/FinishTestButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:text="Finish Test"
+        />
+
+        <Button
+            android:id="@+id/SkipTestButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:layout_marginTop="32sp"
+            android:layout_gravity="center_horizontal"
+            android:text="Skip &amp; End"
+            />
+
+    </LinearLayout>
+
+</LinearLayout>

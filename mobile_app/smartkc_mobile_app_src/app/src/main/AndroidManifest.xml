@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.kt">
+
+    <uses-sdk/>
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-feature android:name="android.hardware.camera.any" />
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/kt_icon"
+        android:label="KT"
+        android:roundIcon="@drawable/kt_icon"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        android:requestLegacyExternalStorage="true"
+        >
+
+        <activity android:name="MainActivity"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".DataActivity"
+            android:label="Data Activity">
+        </activity>
+
+        <activity
+            android:name=".ViewRecordActivity"
+            android:label="View Record Activity">
+        </activity>
+
+        <activity
+            android:name=".PromptActivity"
+            android:label="Prompt Activity">
+        </activity>
+
+        <activity
+            android:name=".CameraActivityNew"
+            android:label="Camera ActivityNew"
+            android:screenOrientation="portrait">
+        </activity>
+
+        <activity
+            android:name=".CheckImages"
+            android:label="CheckImages Activity">
+        </activity>
+
+        <activity
+            android:name=".GetGTDataActivity"
+            android:label="GT Data Activity">
+        </activity>
+
+        <activity
+            android:name=".UpdatePreferences"
+            android:label="Update Prefs Activity">
+        </activity>
+
+    </application>
+
+</manifest>

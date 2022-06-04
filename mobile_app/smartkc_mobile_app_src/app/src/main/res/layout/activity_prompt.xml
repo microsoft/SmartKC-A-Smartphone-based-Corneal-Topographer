@@ -1,0 +1,30 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/home_background"
+    tools:context="com.example.kt.PromptActivity">
+
+    <ImageView
+        android:id="@+id/simpleImageView"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="top|center"
+        android:src="@drawable/left_prompt" /><!--set the source of an image view-->
+
+
+    <Button
+        android:id="@+id/goButton"
+        android:layout_width="128sp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/simpleImageView"
+        android:layout_centerInParent="true"
+        android:layout_marginLeft="16sp"
+        android:layout_marginTop="16sp"
+        android:layout_marginRight="16sp"
+        android:layout_marginBottom="16sp"
+        android:text="GO"
+        android:textSize="28sp" />
+
+</RelativeLayout>
