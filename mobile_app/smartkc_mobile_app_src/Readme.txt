@@ -1,1 +1,3 @@
-Text and buttons moved 20% above to adjust for the phone holder on bottom part.
+# SmartKC Mobile App
+
+Please find the src and apk of the smartkc mobile app used in the research study.
