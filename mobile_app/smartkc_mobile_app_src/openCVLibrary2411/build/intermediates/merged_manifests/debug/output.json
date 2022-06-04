@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "applicationId": "org.opencv",
+  "variantType": "LIBRARY",
+  "elements": [
+    {
+      "outputType": {
+        "type": "MERGED_MANIFESTS"
+      },
+      "apkData": {
+        "type": "MAIN",
+        "splits": [],
+        "versionCode": 24110,
+        "versionName": "2.4.11",
+        "outputFile": "openCVLibrary2411-debug.aar",
+        "fullName": "debug",
+        "baseName": "debug",
+        "dirName": ""
+      },
+      "path": "../../library_manifest/debug/AndroidManifest.xml",
+      "properties": {
+        "packageId": "org.opencv",
+        "split": ""
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/cover"
+    tools:context="com.example.kt.MainActivity">
+
+    <Button
+        android:id="@+id/new_button"
+        android:layout_width="164sp"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_marginBottom="16sp"
+        android:layout_marginTop="16sp"
+        android:text="New Test"
+        android:textSize="24sp" />
+
+    <Button
+        android:id="@+id/view_records"
+        android:layout_width="164sp"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_below="@+id/new_button"
+        android:text="View Records"
+        android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/update_preferences"
+        android:layout_width="164sp"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_below="@+id/view_records"
+        android:text="Update Prefs"
+        android:textSize="18sp"
+        android:layout_marginTop="48sp"/>
+</RelativeLayout>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+    <!--
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="128sp"
+        android:layout_centerHorizontal="true" />
+        -->
+
+    <TextView
+        android:id="@+id/questionView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="16sp"
+        android:layout_marginTop="10sp"
+        android:text="Is the image in focus and sharp?"
+        android:textAlignment="center"
+        android:textColor="#EF0A0A"
+        android:textSize="28sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/questionView"
+        android:layout_marginLeft="16sp"
+        android:layout_marginTop="10sp"
+        android:layout_marginBottom="10sp"
+        android:text="Image"
+        android:textAlignment="center"
+        android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/no_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/questionView"
+        android:layout_toRightOf="@id/textView"
+        android:layout_marginLeft="10sp"
+        android:layout_marginBottom="10sp"
+        android:text="NO" />
+
+    <Button
+        android:id="@+id/yes_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/questionView"
+        android:layout_toRightOf="@id/no_btn"
+        android:layout_marginLeft="20sp"
+        android:layout_marginBottom="10sp"
+        android:text="YES" />
+
+    <TextView
+        android:id="@+id/pinchView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/no_btn"
+        android:layout_marginTop="8sp"
+        android:text="Pinch to Zoom"
+        android:layout_centerHorizontal="true"
+        android:textColor="#000000"
+        android:textSize="18sp" />
+
+    <com.github.chrisbanes.photoview.PhotoView
+        android:id="@+id/myimage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/pinchView"
+        android:layout_marginBottom="96sp"
+        android:layout_marginEnd="-6dp" />
+
+
+</RelativeLayout>

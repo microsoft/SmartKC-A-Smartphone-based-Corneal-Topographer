@@ -1,0 +1,42 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.kt.UpdatePreferences">
+
+
+    <TextView
+        android:id="@+id/UpdateTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="16sp"
+        android:layout_marginBottom="16sp"
+        android:text="Update Center Cutoff"
+        android:textAlignment="center"
+        android:textColor="#03A9F4"
+        android:textSize="28sp" />
+
+    <EditText
+        android:id="@+id/EditPreference"
+        android:layout_width="164sp"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_below="@+id/UpdateTitle"
+        android:layout_marginBottom="16sp"
+        android:layout_marginTop="16sp"
+        android:inputType="numberDecimal"
+        android:textColor="#000000"/>
+
+
+    <Button
+        android:id="@+id/SavePreference"
+        android:layout_width="164sp"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_below="@+id/EditPreference"
+        android:text="Save"
+        android:textSize="18sp" />
+
+</RelativeLayout>
