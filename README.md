@@ -240,9 +240,9 @@ zernike_smoothening(
 
 * Please find the source for the SmartKC Android Mobile App that was used as part of the study here: `SmartKC-A-Smartphone-based-Corneal-Topographer/mobile_app/smartkc_mobile_app_src`.
 
-## SmartKC 3D Attachment
-* The 3D STL files for the Placido attachment and base clip are located at: `SmartKC-A-Smartphone-based-Corneal-Topographer/3d_attachment/placido_head.stl` and `SmartKC-A-Smartphone-based-Corneal-Topographer/3d_attachment/base_clip.stl` respectively.
-
+## SmartKC Hardware
+* The STL files for the placido head, diffuser, and placido base are located at: `hardware/placido_head.stl`, `hardware/diffuser.stl`, and `hardware/placido_base.stl` respectively, along with the instructions to 3D print them.
+* Details related to the development board (and its source code), LED ring, smartphone specifications, assembly instructions, etc. are present in the `hardware` folder.
 
 # Disclaimer
 `This is a research project and not an approved medical software and should not be used for diagnostic purposes.`
