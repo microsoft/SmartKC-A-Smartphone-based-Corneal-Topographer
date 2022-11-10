@@ -27,7 +27,12 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import com.example.kt.data.repo.FileRepository
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_cameranew.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.core.Point
@@ -36,9 +41,10 @@ import java.io.File
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import javax.inject.Inject
 import kotlin.math.sqrt
 
-
+@AndroidEntryPoint
 class CameraActivityNew : AppCompatActivity() {
 
     private var imageCapture: ImageCapture? = null
@@ -46,6 +52,8 @@ class CameraActivityNew : AppCompatActivity() {
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var cameraProvider: ProcessCameraProvider
     private lateinit var camera: Camera // this was a local variable in original code
+    // File Repository
+    @Inject lateinit var fileRepository: FileRepository
 
     // public class variables
     var base_dir: String? = null
@@ -193,6 +201,10 @@ class CameraActivityNew : AppCompatActivity() {
             override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                 val savedUri = Uri.fromFile(photoFile)
                 val msg = "Photo capture succeeded: $savedUri"
+                // Record it in database
+                runBlocking {
+                    fileRepository.insertNewFileRecord(savedUri.toString())
+                }
                 Toast.makeText(baseContext, "Counts:" + (currentCounts + 1) + "/" + maxCounts, Toast.LENGTH_SHORT).show()
                 Log.d(TAG, msg)
                 // play capture sound
