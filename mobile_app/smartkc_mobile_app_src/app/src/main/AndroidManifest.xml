@@ -11,6 +11,7 @@
 
 
     <application
+        android:name=".KTApp"
         android:allowBackup="true"
         android:icon="@drawable/kt_icon"
         android:label="KT"
