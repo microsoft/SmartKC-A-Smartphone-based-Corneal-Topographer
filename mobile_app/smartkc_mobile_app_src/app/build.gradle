@@ -71,7 +71,7 @@ dependencies {
     implementation "com.opencsv:opencsv:4.0"
 
     //implementation 'com.camerakit:camerakit:1.0.0-beta3.11'
-    //implementation "androidx.core:core-ktx:+"
+    implementation "androidx.core:core-ktx:1.9.0"
     //implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
     // CameraX core library using the camera2 implementation
@@ -122,4 +122,10 @@ dependencies {
     // WorkManager
     def work_version = "2.7.1"
     implementation "androidx.work:work-runtime-ktx:$work_version"
+
+    // OK HTTP
+    implementation "com.squareup.okhttp3:okhttp:5.0.0-alpha.2"
+
+    // Retrofit
+    implementation "com.squareup.retrofit2:retrofit:2.9.0"
 }
