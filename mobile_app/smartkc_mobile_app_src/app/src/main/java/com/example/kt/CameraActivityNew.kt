@@ -31,6 +31,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.kt.data.repo.FileRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_cameranew.*
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opencv.android.Utils
