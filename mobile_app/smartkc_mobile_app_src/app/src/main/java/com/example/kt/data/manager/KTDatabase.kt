@@ -16,8 +16,7 @@ import com.example.kt.data.models.KTFile
     [
       KTFile::class
     ],
-  version = 2,
-  autoMigrations = [AutoMigration(from = 1, to = 2)],
+  version = 3,
   exportSchema = true
 )
 

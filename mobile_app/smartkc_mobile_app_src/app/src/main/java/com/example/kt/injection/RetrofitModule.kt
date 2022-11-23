@@ -31,7 +31,7 @@ class RetrofitModule {
     fun provideRetrofitInstance(
         okHttpClient: OkHttpClient
     ): Retrofit {
-        return Retrofit.Builder().client(okHttpClient).baseUrl("https://ripe-loops-dance-132-154-39-140.loca.lt").build()
+        return Retrofit.Builder().client(okHttpClient).baseUrl("https://olive-readers-visit-139-167-236-150.loca.lt").build()
     }
 
     @Provides
