@@ -16,27 +16,30 @@ class FileRepository @Inject constructor(
     private val fileAPI: FileAPI
 ){
     // insert new file record
-    suspend fun insertNewFileRecord(uri: String) { fileDao.insertFileRecord(uri) }
+    suspend fun insertNewFileRecord(uri: String, fileName: String) { fileDao.insertFileRecord(uri, fileName) }
 
     // get un-uploaded file records
     suspend fun getUnUploadedFileRecords(): List<KTFile> { return fileDao.getUnUploadedFiles() }
 
+    // update uploaded file
+    suspend fun markFileUploaded(uri: String) { fileDao.markFileUploaded(uri) }
+
     // upload file
-    suspend fun uploadFile(uri: String) = flow {
-        val fileUri = Uri.parse(uri)
+    suspend fun uploadFile(ktFile: KTFile) = flow {
+        val fileUri = Uri.parse(ktFile.uri)
         // Get file
         val file = fileUri.toFile()
-        val fileName = file.name
         val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
-        val filePart = MultipartBody.Part.createFormData("file", fileName, requestFile)
+        val filePart = MultipartBody.Part.createFormData("file", ktFile.fileName, requestFile)
         val response = fileAPI.uploadFile(filePart)
         val responseBody = response.body()
 
         if (!response.isSuccessful) {
-            error("Failed to upload file")
+            error("Upload file API request failed")
         }
 
         if (responseBody != null) {
+            markFileUploaded(ktFile.uri)
             emit(responseBody)
         } else {
             error("Request failed, response body was null")

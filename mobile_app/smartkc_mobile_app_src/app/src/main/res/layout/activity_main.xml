@@ -11,8 +11,8 @@
         android:layout_width="164sp"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:layout_marginBottom="16sp"
         android:layout_marginTop="16sp"
+        android:layout_marginBottom="16sp"
         android:text="New Test"
         android:textSize="24sp" />
 
@@ -20,8 +20,8 @@
         android:id="@+id/view_records"
         android:layout_width="164sp"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
         android:layout_below="@+id/new_button"
+        android:layout_centerInParent="true"
         android:text="View Records"
         android:textSize="18sp" />
 
@@ -29,9 +29,66 @@
         android:id="@+id/update_preferences"
         android:layout_width="164sp"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
         android:layout_below="@+id/view_records"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="32sp"
         android:text="Update Prefs"
-        android:textSize="18sp"
-        android:layout_marginTop="48sp"/>
+        android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/upload_files_btn"
+        android:layout_width="164sp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/update_preferences"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="18sp"
+        android:text="Upload files"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/upload_file_status_tv"
+        android:layout_width="164sp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/upload_files_btn"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="18sp"
+        android:gravity="center"
+        android:textColor="#000"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/upload_file_error_tv"
+        android:layout_width="164sp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/upload_file_status_tv"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="18sp"
+        android:gravity="center"
+        android:textColor="#FF0000"
+        android:textSize="12sp" />
+
+    <EditText
+        android:id="@+id/center_name_editText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8sp"
+        android:ems="10"
+        android:gravity="center"
+        android:hint="Center name..."
+        android:inputType="textPersonName"
+        android:textColor="#fff"
+        android:textColorHint="#fff" />
+
+    <Button
+        android:id="@+id/save_center_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/center_name_editText"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="18sp"
+        android:gravity="center"
+        android:text="OK"
+        android:textSize="18sp" />
+
+
 </RelativeLayout>

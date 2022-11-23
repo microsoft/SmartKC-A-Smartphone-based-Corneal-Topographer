@@ -12,6 +12,6 @@ interface FileDao {
     @Query("UPDATE files SET uploaded = 1 WHERE uri=:uri") suspend fun markFileUploaded(uri: String)
 
     // Insert a new file record
-    @Query("INSERT INTO files VALUES (:uri, 0)") suspend fun insertFileRecord(uri: String)
+    @Query("INSERT INTO files VALUES (:uri, :fileName, 0)") suspend fun insertFileRecord(uri: String, fileName:String)
 
 }

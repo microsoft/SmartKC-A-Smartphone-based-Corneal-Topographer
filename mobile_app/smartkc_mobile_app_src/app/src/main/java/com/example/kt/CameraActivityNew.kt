@@ -148,7 +148,7 @@ class CameraActivityNew : AppCompatActivity() {
         hash_map = getIntent().getSerializableExtra("hash_map") as HashMap<*, *>
 
         // get current idx
-        val dir = File(Environment.getExternalStorageDirectory(), MainActivity.PACKAGE_NAME + "/" + dir_name)
+        val dir = File(getExternalFilesDir(null), MainActivity.PACKAGE_NAME + "/" + dir_name)
         if(dir.listFiles { dir, name -> name.toLowerCase().startsWith(left_right!!) } != null)
             idx = dir.listFiles { dir, name -> name.toLowerCase().startsWith(left_right!!) }.size
 
@@ -204,7 +204,15 @@ class CameraActivityNew : AppCompatActivity() {
                 val msg = "Photo capture succeeded: $savedUri"
                 // Record it in database
                 runBlocking {
-                    fileRepository.insertNewFileRecord(savedUri.toString())
+                    val sharedPrefs = getSharedPreferences("KT_APP_PREFERENCES", MODE_PRIVATE)
+                    val center_name = sharedPrefs.getString("CENTER_NAME", "")
+                    if (center_name.isNullOrEmpty()) {
+                        throw Error("Center name cannot be null")
+                    }
+                    val fileNameParts = savedUri.toString().split("_")
+                    val idx = fileNameParts[fileNameParts.size-1]
+                    val fileName = "${center_name}/${dir_name?.split("_")?.get(0)}/${left_right}/${idx}"
+                    fileRepository.insertNewFileRecord(savedUri.toString(), fileName)
                 }
                 Toast.makeText(baseContext, "Counts:" + (currentCounts + 1) + "/" + maxCounts, Toast.LENGTH_SHORT).show()
                 Log.d(TAG, msg)
@@ -333,12 +341,12 @@ class CameraActivityNew : AppCompatActivity() {
 
     private fun getOutputDirectory(): File {
         // ugly way to do this, fix if needed
-        var dir = File(Environment.getExternalStorageDirectory(), base_dir)
+        var dir = File(getExternalFilesDir(null), base_dir)
         if (!dir.exists()) {
             dir.mkdirs()
             Log.e(TAG, "Output directory Created")
         }
-        dir = File(Environment.getExternalStorageDirectory(), base_dir + '/' + dir_name)
+        dir = File(getExternalFilesDir(null), base_dir + '/' + dir_name)
         if (!dir.exists()) {
             dir.mkdirs()
         }

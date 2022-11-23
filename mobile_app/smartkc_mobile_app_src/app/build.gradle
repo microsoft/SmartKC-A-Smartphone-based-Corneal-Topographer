@@ -122,10 +122,16 @@ dependencies {
     // WorkManager
     def work_version = "2.7.1"
     implementation "androidx.work:work-runtime-ktx:$work_version"
+    implementation "androidx.work:work-multiprocess:$work_version"
 
     // OK HTTP
     implementation "com.squareup.okhttp3:okhttp:5.0.0-alpha.2"
 
     // Retrofit
     implementation "com.squareup.retrofit2:retrofit:2.9.0"
+
+    // Livedata
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.6.0-alpha03"
+    implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
+
 }
