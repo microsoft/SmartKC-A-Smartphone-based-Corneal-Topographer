@@ -1,7 +1,8 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:background="@drawable/cover"
     tools:context="com.example.kt.MainActivity">
@@ -10,8 +11,10 @@
         android:id="@+id/new_button"
         android:layout_width="164sp"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:layout_marginTop="16sp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="360dp"
         android:layout_marginBottom="16sp"
         android:text="New Test"
         android:textSize="24sp" />
@@ -20,8 +23,9 @@
         android:id="@+id/view_records"
         android:layout_width="164sp"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/new_button"
-        android:layout_centerInParent="true"
+        app:layout_constraintTop_toBottomOf="@id/new_button"
+        app:layout_constraintLeft_toLeftOf="@id/new_button"
+        app:layout_constraintRight_toRightOf="@id/new_button"
         android:text="View Records"
         android:textSize="18sp" />
 
@@ -29,8 +33,9 @@
         android:id="@+id/update_preferences"
         android:layout_width="164sp"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/view_records"
-        android:layout_centerInParent="true"
+        app:layout_constraintTop_toBottomOf="@id/view_records"
+        app:layout_constraintLeft_toLeftOf="@id/view_records"
+        app:layout_constraintRight_toRightOf="@id/view_records"
         android:layout_marginTop="32sp"
         android:text="Update Prefs"
         android:textSize="18sp" />
@@ -39,8 +44,9 @@
         android:id="@+id/upload_files_btn"
         android:layout_width="164sp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/update_preferences"
-        android:layout_centerInParent="true"
+        app:layout_constraintTop_toBottomOf="@id/update_preferences"
+        app:layout_constraintRight_toRightOf="@id/update_preferences"
+        app:layout_constraintLeft_toLeftOf="@id/update_preferences"
         android:layout_marginTop="18sp"
         android:text="Upload files"
         android:textSize="18sp" />
@@ -49,8 +55,9 @@
         android:id="@+id/upload_file_status_tv"
         android:layout_width="164sp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/upload_files_btn"
-        android:layout_centerInParent="true"
+        app:layout_constraintTop_toBottomOf="@id/upload_files_btn"
+        app:layout_constraintLeft_toLeftOf="@id/upload_files_btn"
+        app:layout_constraintRight_toRightOf="@id/upload_files_btn"
         android:layout_marginTop="18sp"
         android:gravity="center"
         android:textColor="#000"
@@ -60,7 +67,9 @@
         android:id="@+id/upload_file_error_tv"
         android:layout_width="164sp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/upload_file_status_tv"
+        app:layout_constraintTop_toBottomOf="@id/upload_file_status_tv"
+        app:layout_constraintLeft_toLeftOf="@id/upload_file_status_tv"
+        app:layout_constraintRight_toRightOf="@id/upload_file_status_tv"
         android:layout_centerInParent="true"
         android:layout_marginTop="18sp"
         android:gravity="center"
@@ -69,9 +78,12 @@
 
     <EditText
         android:id="@+id/center_name_editText"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8sp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/save_center_btn"
+        app:layout_constraintTop_toTopOf="parent"
         android:ems="10"
         android:gravity="center"
         android:hint="Center name..."
@@ -84,11 +96,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/center_name_editText"
-        android:layout_centerInParent="true"
-        android:layout_marginTop="18sp"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="@id/center_name_editText"
+        app:layout_constraintBottom_toBottomOf="@id/center_name_editText"
         android:gravity="center"
-        android:text="OK"
+        android:text="SAVE"
         android:textSize="18sp" />
 
 
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
