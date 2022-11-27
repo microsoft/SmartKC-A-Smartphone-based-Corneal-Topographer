@@ -6,13 +6,13 @@ apply plugin: 'kotlin-kapt'
 apply plugin: "dagger.hilt.android.plugin"
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 32
     buildToolsVersion "29.0.2"
 
     defaultConfig {
         applicationId "com.example.kt"
         minSdkVersion 21
-        targetSdkVersion 33
+        targetSdkVersion 32
         versionCode 1
         versionName "1.0"
 
