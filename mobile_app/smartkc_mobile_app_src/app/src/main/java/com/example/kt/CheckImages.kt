@@ -1,6 +1,5 @@
 package com.example.kt
 
-import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -19,6 +18,7 @@ import com.example.kt.data.repo.FileRepository
 import org.apache.commons.io.comparator.LastModifiedFileComparator
 import com.github.chrisbanes.photoview.PhotoView
 import com.opencsv.CSVWriter
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.runBlocking
 import org.opencv.imgproc.Imgproc
 import org.opencv.android.Utils
@@ -32,6 +32,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class CheckImages : AppCompatActivity(), View.OnClickListener {
 
     // File Repository

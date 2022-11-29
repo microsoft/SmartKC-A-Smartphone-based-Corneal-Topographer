@@ -6,13 +6,13 @@ apply plugin: 'kotlin-kapt'
 apply plugin: "dagger.hilt.android.plugin"
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
     buildToolsVersion "29.0.2"
 
     defaultConfig {
         applicationId "com.example.kt"
         minSdkVersion 21
-        targetSdkVersion 32
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
 
@@ -24,6 +24,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField "String", "UPLOAD_URL", "\"https://url/pre/\""
+            buildConfigField "boolean", "UPLOAD_ENABLED", "true"
+        }
+        release {
+            buildConfigField "String", "UPLOAD_URL", "\"https://url/pre/\""
+            buildConfigField "boolean", "UPLOAD_ENABLED", "true"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -63,6 +71,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     implementation project(path: ':openCVLibrary2411')
+    implementation 'androidx.datastore:datastore-preferences:1.1.0-alpha01'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
