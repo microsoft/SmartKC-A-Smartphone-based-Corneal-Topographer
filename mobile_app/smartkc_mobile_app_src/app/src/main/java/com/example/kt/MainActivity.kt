@@ -16,6 +16,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.kt.MainActivity
 import androidx.core.app.ActivityCompat
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.flowWithLifecycle
@@ -26,8 +29,10 @@ import com.example.kt.DataActivity
 import com.example.kt.ViewRecordActivity
 import com.example.kt.UpdatePreferences
 import com.example.kt.data.repo.FileRepository
+import com.example.kt.utils.PreferenceKeys
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -41,8 +46,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     companion object {
         /** Called when the activity is first created.  */
         private const val REQUEST_CAMERA_PERMISSION = 200
+
         @JvmField
         var PACKAGE_NAME: String? = null
+
         @JvmField
         var VERSION: String? = null
 
@@ -54,11 +61,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val UNIQUE_SYNC_WORK_NAME = "UPLOAD_FILE"
 
     // File Repository
-    @Inject lateinit var fileRepository: FileRepository
+    @Inject
+    lateinit var fileRepository: FileRepository
+
+    // Datastore
+    @Inject
+    lateinit var dataStore: DataStore<Preferences>
 
     private var centerName: String? = null
     private lateinit var uploadFileStatusTv: TextView
     private lateinit var uploadFileErrorTv: TextView
+    private lateinit var uploadBtn: Button
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -108,7 +121,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         updatePrefs.setOnClickListener(this)
 
         // get upload button reference
-        val uploadBtn = findViewById<Button>(R.id.upload_files_btn)
+        uploadBtn = findViewById(R.id.upload_files_btn)
 
         // get center set button reference
         val saveCenterBtn = findViewById<Button>(R.id.save_center_btn)
@@ -135,12 +148,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             uploadFileStatusTv.text = "Files to Upload: ${unUploadedFiles.size}"
         }
 
-        // set Er
-
         saveCenterBtn.setOnClickListener {
             centerName = centerEt.text.toString()
             if (centerName.isNullOrEmpty()) {
-                Toast.makeText(applicationContext, "Please enter a center name", Toast.LENGTH_LONG).show()
+                Toast.makeText(applicationContext, "Please enter a center name", Toast.LENGTH_LONG)
+                    .show()
             } else {
                 val ed = sharedPrefs.edit()
                 ed.putString("CENTER_NAME", centerName)
@@ -166,32 +178,40 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         WorkManager.getInstance(this)
             .getWorkInfosForUniqueWorkLiveData(UNIQUE_SYNC_WORK_NAME)
             .observe(this) { workInfos ->
-                if (workInfos.size == 0) return@observe // Return if the workInfo List is empty
-                val workInfo = workInfos[0] // Picking the first workInfo
-                if (workInfo != null && workInfo.state == WorkInfo.State.SUCCEEDED) {
-                    val errorMsg = workInfo.outputData.keyValueMap["errorMsg"] as String?
-                    val unUploadedFilesCount = workInfo.outputData.keyValueMap["unUploadedFilesCount"] as String?
-                    if((unUploadedFilesCount ?: "0").toInt() > 0) {
-                        uploadFileErrorTv.text = "Cannot upload $unUploadedFilesCount files \n error: $errorMsg"
-                        uploadFileErrorTv.visibility = View.VISIBLE
-                    }
-                    lifecycleScope.launch {
+                lifecycleScope.launch {
+                    // Determine if upload is available
+                    val data = dataStore.data.first()
+                    val uploadEnabledKey = booleanPreferencesKey(PreferenceKeys.UPLOAD_ENABLED)
+                    val uploadEnabled = data[uploadEnabledKey] ?: BuildConfig.UPLOAD_ENABLED
+                    if (!uploadEnabled) return@launch //Return if upload is not enabled
+                    if (workInfos.size == 0) return@launch // Return if the workInfo List is empty
+                    val workInfo = workInfos[0] // Picking the first workInfo
+                    if (workInfo != null && workInfo.state == WorkInfo.State.SUCCEEDED) {
+                        val errorMsg = workInfo.outputData.keyValueMap["errorMsg"] as String?
+                        val unUploadedFilesCount =
+                            workInfo.outputData.keyValueMap["unUploadedFilesCount"] as String?
+                        if ((unUploadedFilesCount ?: "0").toInt() > 0) {
+                            uploadFileErrorTv.text =
+                                "Cannot upload $unUploadedFilesCount files \n error: $errorMsg"
+                            uploadFileErrorTv.visibility = View.VISIBLE
+                        }
                         val unUploadedFiles = fileRepository.getUnUploadedFileRecords()
                         uploadFileStatusTv.text = "Files to Upload: ${unUploadedFiles.size}"
                     }
-                }
-                if (workInfo != null && workInfo.state == WorkInfo.State.RUNNING) {
-                    val fileIndex = workInfo.progress.getInt("progress", -1)
-                    if (fileIndex > -1) {
-                        uploadFileStatusTv.text = "Uploading file ${fileIndex+1} "
+                    if (workInfo != null && workInfo.state == WorkInfo.State.RUNNING) {
+                        val fileIndex = workInfo.progress.getInt("progress", -1)
+                        if (fileIndex > -1) {
+                            uploadFileStatusTv.text = "Uploading file ${fileIndex + 1} "
+                        }
+                        uploadFileErrorTv.visibility = View.INVISIBLE
                     }
-                    uploadFileErrorTv.visibility = View.INVISIBLE
-                }
-                if (workInfo != null && workInfo.state == WorkInfo.State.FAILED) {
-                    Toast.makeText(this, "FAILED TO UPLOAD SOME FILES", Toast.LENGTH_LONG).show()
-                    val errorMsg = workInfo.outputData.getString("errorMsg")
-                    uploadFileErrorTv.text = errorMsg
-                    uploadFileErrorTv.visibility = View.VISIBLE
+                    if (workInfo != null && workInfo.state == WorkInfo.State.FAILED) {
+                        Toast.makeText(applicationContext, "FAILED TO UPLOAD SOME FILES", Toast.LENGTH_LONG)
+                            .show()
+                        val errorMsg = workInfo.outputData.getString("errorMsg")
+                        uploadFileErrorTv.text = errorMsg
+                        uploadFileErrorTv.visibility = View.VISIBLE
+                    }
                 }
             }
 
@@ -209,11 +229,31 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         CrashReporter.initialize(this, dir.toString())
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Hide upload button and error tv if upload is deactivated
+        lifecycleScope.launch {
+            val data = dataStore.data.first()
+            val uploadEnabledKey = booleanPreferencesKey(PreferenceKeys.UPLOAD_ENABLED)
+            val uploadEnabled = data[uploadEnabledKey] ?: BuildConfig.UPLOAD_ENABLED
+            if (!uploadEnabled) {
+                uploadBtn.visibility = View.GONE
+                uploadFileErrorTv.visibility = View.GONE
+                uploadFileStatusTv.visibility = View.GONE
+            } else {
+                uploadBtn.visibility = View.VISIBLE
+                uploadFileErrorTv.visibility = View.VISIBLE
+                uploadFileStatusTv.visibility = View.VISIBLE
+            }
+        }
+    }
+
     //override the OnClickListener interface method
     override fun onClick(arg0: View) {
         if (arg0.id == R.id.new_button) {
             if (centerName.isNullOrEmpty()) {
-                Toast.makeText(applicationContext, "Please enter a center name", Toast.LENGTH_LONG).show()
+                Toast.makeText(applicationContext, "Please enter a center name", Toast.LENGTH_LONG)
+                    .show()
                 return
             }
             //define a new Intent for the second Activity
@@ -234,8 +274,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
             //define a new Intent for the second Activity
             val intent = Intent(this, UpdatePreferences::class.java)
-            //finish current activity
-            finish()
             //start the second Activity
             this.startActivity(intent)
         }
