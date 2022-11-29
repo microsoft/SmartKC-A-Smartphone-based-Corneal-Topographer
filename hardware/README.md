@@ -46,8 +46,8 @@ We used the FlashForge Finder 3D printer with [FlashPrint](https://flashforge-us
 
 ## Smartphone Specifications:
 * Android smartphone with 12 MP (or more) back camera with a minimum focusing distance of 75mm (or less).
-* Devices we have tested SmartKC to work well on: OnePlus 7T, Samsung Galaxy A52s 5G, Xiaomi Pocophone F1.
-* Devices we have tested SmartKC to not work on: OnePlus 9 5G, Redmi 9 Power. Reason: minimum focusing distance too high.
+* Devices we have tested SmartKC to work well on: OnePlus 7T, OnePlus 6T, Samsung Galaxy A52s 5G, Xiaomi Pocophone F1.
+* Devices we have tested SmartKC to not work on: OnePlus 9 5G, Redmi 9 Power, Pixel 4a. Reason: minimum focusing distance too high.
 
 ## Assembly Instructions (putting it all together):
 1. Upload the `attiny85_led_setup_code.ino` code to the `Development board`.
