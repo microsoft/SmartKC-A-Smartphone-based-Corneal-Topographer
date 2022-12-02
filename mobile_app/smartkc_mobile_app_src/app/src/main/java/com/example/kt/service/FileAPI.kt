@@ -8,6 +8,7 @@ interface FileAPI {
     @Multipart
     @POST("/api/smart_kc_test_uploader")
     suspend fun uploadFile(
+        @Header("upload_secret") uploadSecret: String,
         @Part file: MultipartBody.Part
     ): Response<ResponseBody>
 }

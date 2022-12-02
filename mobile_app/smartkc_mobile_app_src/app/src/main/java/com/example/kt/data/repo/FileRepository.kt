@@ -2,9 +2,14 @@ package com.example.kt.data.repo
 
 import android.net.Uri
 import androidx.core.net.toFile
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.kt.data.local.daos.FileDao
 import com.example.kt.data.models.KTFile
 import com.example.kt.service.FileAPI
+import com.example.kt.utils.PreferenceKeys
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -13,7 +18,8 @@ import javax.inject.Inject
 
 class FileRepository @Inject constructor(
     private val fileDao: FileDao,
-    private val fileAPI: FileAPI
+    private val fileAPI: FileAPI,
+    private val dataStore: DataStore<Preferences>
 ){
     // insert new file record
     suspend fun insertNewFileRecord(uri: String, fileName: String) { fileDao.insertFileRecord(uri, fileName) }
@@ -31,7 +37,10 @@ class FileRepository @Inject constructor(
         val file = fileUri.toFile()
         val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
         val filePart = MultipartBody.Part.createFormData("file", ktFile.fileName, requestFile)
-        val response = fileAPI.uploadFile(filePart)
+        // Get upload secret
+        val data = dataStore.data.first()
+        val uploadSecret = data[stringPreferencesKey(PreferenceKeys.UPLOAD_SECRET)]!!
+        val response = fileAPI.uploadFile(uploadSecret, filePart)
         val responseBody = response.body()
 
         if (!response.isSuccessful) {
