@@ -1,11 +1,9 @@
 package com.example.kt
 
-import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -13,9 +11,9 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.kt.MainActivity
 import com.example.kt.data.repo.FileRepository
 import com.opencsv.CSVWriter
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileNotFoundException
@@ -24,6 +22,7 @@ import java.io.IOException
 import java.lang.Exception
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class GetGTDataActivity : AppCompatActivity(), View.OnClickListener {
     var dir_name: String? = null
     // File Repository
