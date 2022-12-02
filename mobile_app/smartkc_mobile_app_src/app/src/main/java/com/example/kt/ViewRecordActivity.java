@@ -8,7 +8,6 @@ import android.graphics.Color;
 import android.os.AsyncTask;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -19,14 +18,9 @@ import android.widget.TableRow;
 import android.widget.TextView;
 
 import java.io.File;
-import java.nio.file.attribute.FileTime;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
 
 import java.util.Arrays;
-import java.util.Date;
 
 class PatientData {
 
@@ -40,9 +34,15 @@ class PatientData {
 }
 class Records {
 
+    String externalDirectoryPath;
+
+    Records(String externalDirectoryPath) {
+        this.externalDirectoryPath = externalDirectoryPath;
+    }
+
     public PatientData[] getRecords(String base_dir) {
 
-        File dir = new File(Environment.getExternalStorageDirectory(), base_dir);
+        File dir = new File(externalDirectoryPath, base_dir);
         File[] files = dir.listFiles();
 
         // if files dir empty
@@ -139,7 +139,7 @@ public class ViewRecordActivity extends AppCompatActivity {
         smallTextSize = (int) getResources().getDimension(R.dimen.font_size_small);
         mediumTextSize = (int) getResources().getDimension(R.dimen.font_size_medium);
 
-        Records invoices = new Records();
+        Records invoices = new Records(getExternalFilesDir(null).getAbsolutePath());
         PatientData[] data = invoices.getRecords(MainActivity.PACKAGE_NAME);
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM, yyyy");
 

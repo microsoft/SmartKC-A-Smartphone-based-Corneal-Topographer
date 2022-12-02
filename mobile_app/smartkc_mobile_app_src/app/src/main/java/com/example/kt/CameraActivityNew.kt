@@ -13,7 +13,6 @@ import android.hardware.camera2.params.StreamConfigurationMap
 import android.media.MediaActionSound
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.util.AttributeSet
 import android.util.Log
 import android.util.Size
@@ -27,12 +26,9 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import com.example.kt.data.repo.FileRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_cameranew.*
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.opencv.android.Utils
 import org.opencv.core.*
