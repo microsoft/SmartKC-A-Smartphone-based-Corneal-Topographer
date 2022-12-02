@@ -34,7 +34,6 @@ class RetrofitModule {
     }
 
     @Provides
-    @Reusable
     fun provideRetrofitInstance(
         dataStore: DataStore<Preferences>,
         okHttpClient: OkHttpClient
