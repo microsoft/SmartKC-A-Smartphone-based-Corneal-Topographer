@@ -1,15 +1,18 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+
+apply plugin: "dagger.hilt.android.plugin"
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 33
     buildToolsVersion "29.0.2"
 
     defaultConfig {
         applicationId "com.example.kt"
         minSdkVersion 21
-        targetSdkVersion 29
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
 
@@ -21,6 +24,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField "String", "UPLOAD_URL", "\"https://url/pre/\""
+            buildConfigField "boolean", "UPLOAD_ENABLED", "true"
+        }
+        release {
+            buildConfigField "String", "UPLOAD_URL", "\"https://url/pre/\""
+            buildConfigField "boolean", "UPLOAD_ENABLED", "true"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -29,6 +40,24 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kapt {
+        arguments {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
+    }
+    packagingOptions {
+        exclude "META-INF/DEPENDENCIES"
+        exclude "META-INF/LICENSE"
+        exclude "META-INF/LICENSE.txt"
+        exclude "META-INF/license.txt"
+        exclude "META-INF/NOTICE"
+        exclude "META-INF/NOTICE.txt"
+        exclude "META-INF/notice.txt"
+        exclude "META-INF/ASL2.0"
+        exclude "META-INF/*.kotlin_module"
+        exclude "META-INF/gradle/*.processors"
     }
 }
 
@@ -39,9 +68,10 @@ repositories{
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     implementation project(path: ':openCVLibrary2411')
+    implementation 'androidx.datastore:datastore-preferences:1.1.0-alpha01'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
@@ -50,7 +80,7 @@ dependencies {
     implementation "com.opencsv:opencsv:4.0"
 
     //implementation 'com.camerakit:camerakit:1.0.0-beta3.11'
-    //implementation "androidx.core:core-ktx:+"
+    implementation "androidx.core:core-ktx:1.9.0"
     //implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
     // CameraX core library using the camera2 implementation
@@ -70,4 +100,47 @@ dependencies {
 
     // crash reporter
     compile 'com.balsikandar.android:crashreporter:1.0.9'
+
+    // Room Dependency
+    def room_version = "2.4.3"
+
+    implementation "androidx.room:room-runtime:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+    // To use Kotlin annotation processing tool (kapt)
+    kapt "androidx.room:room-compiler:$room_version"
+
+    // Hilt
+    def dagger_hilt_version = "2.34.1-beta"
+    def androidx_hilt_version = "1.0.0-beta01"
+    implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
+    implementation "com.google.dagger:hilt-compiler:$dagger_hilt_version"
+    implementation "androidx.hilt:hilt-compiler:$androidx_hilt_version"
+
+    kapt "com.google.dagger:hilt-compiler:$dagger_hilt_version"
+    kapt "androidx.hilt:hilt-compiler:$androidx_hilt_version"
+
+    // Lifecycle
+    def lifecycle_version = "2.6.0-alpha03"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version"
+    kapt "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
+
+    // Couroutines
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.1"
+
+    // WorkManager
+    def work_version = "2.7.1"
+    implementation "androidx.work:work-runtime-ktx:$work_version"
+    implementation "androidx.work:work-multiprocess:$work_version"
+
+    // OK HTTP
+    implementation "com.squareup.okhttp3:okhttp:5.0.0-alpha.2"
+
+    // Retrofit
+    implementation "com.squareup.retrofit2:retrofit:2.9.0"
+
+    // Livedata
+    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.6.0-alpha03"
+    implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
+
 }
