@@ -245,7 +245,7 @@ zernike_smoothening(
 * Details related to the development board (and its source code), LED ring, smartphone specifications, assembly instructions, etc. are present in the `hardware` folder.
 
 # Disclaimer
-`This is a research project and not an approved medical software and should not be used for diagnostic purposes.`
+**The software and hardware described in this repository is provided for research and development use only. The software and hardware are not intended for use in clinical decision-making or for any other clinical use, and their performance for clinical use has not been established. You bear sole responsibility for any use of this software and hardware, including incorporation into any product intended for clinical use.**
 
 # Contributing
 
