@@ -9,7 +9,6 @@ import matplotlib.ticker as ticker
 
 np.set_printoptions(threshold=np.inf)
 import argparse
-from zernike import RZern
 import pdb
 
 # external modules
@@ -20,6 +19,7 @@ from arc_step_method import arc_step
 from get_maps import *
 from utils import *
 from metrics import *
+from zernike_smartkc import RZern
 
 # command line arguments (if any)
 parser = argparse.ArgumentParser(description="KT Processing Pipeline")
@@ -58,7 +58,7 @@ parser.add_argument(
     help="Camera parameters: sensor dimensions (width x height), focal length (space separated string)",
 )
 parser.add_argument(
-    "--model_file",
+    "--placido_model_dimensions",
     default=None,
     type=str,
     help="File with details about the placido head model",
@@ -525,7 +525,7 @@ if __name__ == "__main__":
 
     # create the corneal_top_gen class object
     corneal_top_obj = corneal_top_gen(
-        args.model_file, args.working_distance, sensor_dims, 
+        args.placido_model_dimensions, args.working_distance, sensor_dims, 
         f_len, args.start_angle, args.end_angle, args.jump, 
         args.upsample, args.n_mires, f_inv_20_5,
         )
@@ -540,7 +540,7 @@ if __name__ == "__main__":
     # expects image to be in .jpg format
     error = corneal_top_obj.generate_topography_maps(
         base_dir,
-        "607348_right_2.jpg",
+        "nokc_eye_2.jpg",
         center=center,
         downsample=True,
         blur=True,

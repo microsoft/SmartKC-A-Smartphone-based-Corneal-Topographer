@@ -4,7 +4,7 @@
                                                                         
 import torch
 import torchvision
-from torchvision.transforms import Compose, CenterCrop, Normalize, Scale, Resize, ToTensor, ToPILImage
+from torchvision.transforms import Compose, CenterCrop, Normalize, Resize, ToTensor, ToPILImage
 import torch.nn as nn
 import skimage.io as io
 
