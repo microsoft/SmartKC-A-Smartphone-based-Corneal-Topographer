@@ -14,6 +14,9 @@
 
 Note: Kindly follow the guidelines mentioned in the `guidelines_for_data_collector.pdf` document to collect high-quality data from the SmartKC device.
 
+## Ring Distribution
+File `./ring_distribution.txt` contains the radius of each ring and its height from the base.
+
 ## 3D-print Instructions:
 
 ### Placido head:
