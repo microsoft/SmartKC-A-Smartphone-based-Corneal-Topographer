@@ -17,6 +17,7 @@
         android:allowBackup="true"
         android:icon="@drawable/kt_icon"
         android:label="KT"
+        android:exported="true"
         android:roundIcon="@drawable/kt_icon"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
