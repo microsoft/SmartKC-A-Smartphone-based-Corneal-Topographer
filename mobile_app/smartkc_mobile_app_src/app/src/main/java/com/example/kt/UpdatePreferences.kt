@@ -101,7 +101,7 @@ class UpdatePreferences : AppCompatActivity(), View.OnClickListener {
                 val uploadSecret = uploadSecretEt.text.toString()
                 val uploadEnabled = uploadSwitch.isChecked
 
-                if (centerCutOffInput.isNullOrEmpty() || uploadUrlInput.isNullOrEmpty() || uploadSecret.isNullOrEmpty()) {
+                if (centerCutOffInput.isNullOrEmpty() || uploadEnabled && (uploadUrlInput.isNullOrEmpty() || uploadSecret.isNullOrEmpty())) {
                     Toast.makeText(applicationContext, "Please provide input in all the fields", Toast.LENGTH_SHORT).show()
                     return@launch
                 }
