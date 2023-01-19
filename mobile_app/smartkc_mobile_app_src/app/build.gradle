@@ -4,6 +4,8 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
 apply plugin: "dagger.hilt.android.plugin"
+apply plugin: "com.google.gms.google-services"
+apply plugin: "com.google.firebase.crashlytics"
 
 android {
     compileSdkVersion 33
@@ -142,5 +144,13 @@ dependencies {
     // Livedata
     implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.6.0-alpha03"
     implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
+
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:31.1.1')
+    implementation 'com.google.firebase:firebase-analytics'
+
+    // Crashlytics
+    implementation 'com.google.firebase:firebase-crashlytics-ktx'
+    implementation 'com.google.firebase:firebase-analytics-ktx'
 
 }
