@@ -369,8 +369,7 @@ class CameraActivityNew : AppCompatActivity() {
     companion object {
         private const val TAG = "CameraActivityNew"
         private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     }
 
     // image analysis class
