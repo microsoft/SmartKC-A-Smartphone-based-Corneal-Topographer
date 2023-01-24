@@ -60,7 +60,7 @@
         app:layout_constraintRight_toRightOf="@id/upload_files_btn"
         android:layout_marginTop="18sp"
         android:gravity="center"
-        android:textColor="#000"
+        android:textColor="#FFF"
         android:textSize="18sp" />
 
     <TextView
@@ -73,7 +73,7 @@
         android:layout_centerInParent="true"
         android:layout_marginTop="18sp"
         android:gravity="center"
-        android:textColor="#FF0000"
+        android:textColor="#FFF"
         android:textSize="12sp" />
 
     <EditText

@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.kt.BuildConfig
+import com.example.kt.data.interceptors.HostSelectionInterceptor
 import com.example.kt.service.FileAPI
 import com.example.kt.utils.PreferenceKeys
 import dagger.Module
@@ -26,26 +27,28 @@ class RetrofitModule {
 
     @Provides
     @Reusable
-    fun provideOkHttp(): OkHttpClient {
+    fun provideOkHttp(hostSelectionInterceptor: HostSelectionInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.MINUTES)
             .readTimeout(10, TimeUnit.MINUTES)
+            .addInterceptor(hostSelectionInterceptor)
             .build()
     }
 
     @Provides
+    @Reusable
+    fun provideHostSelectionInterceptor(dataStore: DataStore<Preferences>): HostSelectionInterceptor {
+        return HostSelectionInterceptor(dataStore)
+    }
+
+    @Provides
     fun provideRetrofitInstance(
-        dataStore: DataStore<Preferences>,
         okHttpClient: OkHttpClient
     ): Retrofit {
-        var url: String
-        runBlocking {
-            val data = dataStore.data.first()
-            val uploadUrlKey = stringPreferencesKey(PreferenceKeys.UPLOAD_URL)
-            url = data[uploadUrlKey] ?: BuildConfig.UPLOAD_URL
-        }
-        return Retrofit.Builder().client(okHttpClient).baseUrl(url).build()
+        return Retrofit.Builder().client(okHttpClient).baseUrl("http://__url__").build()
     }
+
+
 
     @Provides
     @Reusable
