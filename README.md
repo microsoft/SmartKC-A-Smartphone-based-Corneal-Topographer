@@ -14,7 +14,7 @@ placido disc reflection (called mires).
 ## Dependencies
 
 ```
-* Python3.7.XX
+* Python3.8.XX
 * numpy==1.18.1
 * opencv-contrib-python==4.4.0.46
 * scikit-image==0.18.1
