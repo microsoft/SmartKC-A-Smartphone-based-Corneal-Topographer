@@ -20,15 +20,21 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.*
 import androidx.camera.core.Camera
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.kt.data.repo.FileRepository
+import com.example.kt.injection.dataStore
+import com.example.kt.utils.PreferenceKeys
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_cameranew.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.opencv.android.Utils
 import org.opencv.core.*
@@ -39,9 +45,10 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.inject.Inject
+import kotlin.collections.LinkedHashSet
 import kotlin.math.sqrt
 
-@AndroidEntryPoint
+@ExperimentalCamera2Interop @ExperimentalCameraFilter @AndroidEntryPoint
 class CameraActivityNew : AppCompatActivity() {
 
     private var imageCapture: ImageCapture? = null
@@ -255,7 +262,6 @@ class CameraActivityNew : AppCompatActivity() {
         cameraProviderFuture.addListener(Runnable {
             // Used to bind the lifecycle of cameras to the lifecycle owner
             cameraProvider = cameraProviderFuture.get()
-
             // Preview
             val preview = Preview.Builder()
                     //.setTargetResolution(Size(640, 480))
@@ -277,8 +283,23 @@ class CameraActivityNew : AppCompatActivity() {
                     .build()
                     .also { it.setAnalyzer(cameraExecutor, MyImageAnalyzer()) }
 
-            // Select back camera as a default
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            var cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            // Get camera selector
+            runBlocking {
+                val data = dataStore.data.first()
+                val selectedCameraKey = stringPreferencesKey(PreferenceKeys.CHOSEN_CAMERA)
+                val selectedCamera = data[selectedCameraKey]
+                Toast.makeText(applicationContext, selectedCamera, Toast.LENGTH_LONG).show()
+                if (selectedCamera != null) cameraSelector = CameraSelector.Builder().addCameraFilter {
+                    val filtered = it.filter {
+                        val cameraId = Camera2CameraInfo.fromCameraInfo(it.cameraInfo).cameraId
+                        return@filter cameraId == selectedCamera }
+                    val result = LinkedHashSet<Camera>()
+                    filtered.forEach { result.add(it) }
+                    result
+                }
+                .build()
+            }
 
             try {
                 // Unbind use cases before rebinding
