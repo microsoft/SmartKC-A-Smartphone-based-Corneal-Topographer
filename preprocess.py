@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # Author: Siddhartha Gairola (t-sigai at microsoft dot com))
+from get_center.get_center import segment_and_get_center
 import numpy as np
 import cv2
+import os
 
 # external modules
 from enhance_img.main_enhancement import enhance, detect_circle
@@ -117,6 +119,7 @@ def preprocess_image(
     filter_radius=10,
     center_selection="manual"
 ):
+    script_dir = os.path.dirname(__file__)
 
     # NOTE THIS EXPECTS THE INPUT IMAGE TO HAVE 3000x4000 RESOLUTION
 
@@ -135,14 +138,38 @@ def preprocess_image(
 
     # Step 3: Locate Image Center
     if center[0] == -1 and center[0] == -1:
-
-        if center_selection=="auto":
+        
+        if center_selection=="auto_obsolete":
             # this is for automatically detecting center
             image_gray = cv2.cvtColor(image_crop, cv2.COLOR_BGR2GRAY)
             image_clean, image_edge = enhance(image_gray, 
                 downsample=downsample, blur=blur)
             image_edge_orig = auto_canny(image_clean)
             center = detect_circle(image_edge_orig, ups=1)
+            
+        elif center_selection=="auto":
+            # this is detecting the center using UNet segmentor
+            get_center_obj = segment_and_get_center(script_dir+'/get_center/segment_and_get_center_epoch_557_iter_14.pkl')
+            # cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "before_image_temp_isocrop.png", image_crop)
+            image_temp_isocrop = crop_around_center(image_crop, crop_dims=(iso_dims, iso_dims))
+            # cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "image_temp_isocrop.png", image_temp_isocrop)
+            mask, ret_list = get_center_obj.segment(image_temp_isocrop)
+            image_bgr, mask_bgr, _ = ret_list
+            cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "image_bgr.png", image_bgr)
+            cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "mask_bgr.png", mask_bgr)
+
+            # print(image_bgr.shape, mask_bgr.shape, "printed images")
+            center = get_center_obj.get_center(mask)
+            # Find cross
+            # height, width = image_crop.shape[:2]
+            # c_x, c_y = (int(center[0]) + (width - iso_dims)//2, int(center[1]) + (height + iso_dims)//2)
+            # c_x, c_y = int(center[0]), int(center[1])
+            # cv2.line(image_temp_isocrop, (c_x-15, c_y-15), (c_x+15, c_y+15), (0, 0, 255), 5)
+            # cv2.line(image_temp_isocrop, (c_x-15, c_y+15), (c_x+15, c_y-15), (0, 0, 255), 5)
+            # # print(c_x, c_y, "ADJUSTED CENTERS")
+            # cv2.imwrite(output_folder + "/center/" + image_name + "center_cross_image_crop.png", image_crop)
+
+            center = int(center[0])+(crop_dims[1]-iso_dims)//2, int(center[1])+(crop_dims[0]-iso_dims)//2
             
         elif center_selection=="manual":
             # detect center manually

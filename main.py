@@ -93,6 +93,12 @@ parser.add_argument(
     type=float,
     help="Accounting for gap (in mm) between camera pupil and smallest ring.",
 )
+parser.add_argument(
+    "--center_selection_mode",
+    default="manual",
+    type=str,
+    help="Mode of center detection. Can be manual or auto"
+)
 
 class corneal_top_gen:
 
@@ -538,12 +544,34 @@ if __name__ == "__main__":
 
     # call function to run pipeline and generate_topography_maps
     # expects image to be in .jpg format
-    error = corneal_top_obj.generate_topography_maps(
-        base_dir,
-        "nokc_eye_2.jpg",
-        center=center,
-        downsample=True,
-        blur=True,
-        err1=[args.gap1],
-        err2=[args.gap2],
-        )
+    failed_to_detect_center = []
+    for filename in os.listdir(base_dir):
+        try:
+            error = corneal_top_obj.generate_topography_maps(
+                base_dir,
+                filename,
+                center=center,
+                downsample=True,
+                blur=True,
+                err1=[args.gap1],
+                err2=[args.gap2],
+                center_selection="auto"
+            )
+        except Exception as e:
+            failed_to_detect_center.append(filename)
+    # Print files for which auto center detection failed
+    print("Auto detection failed for following files")
+    for filename in failed_to_detect_center: print(filename)
+    # Move to manual selection for failed files
+    print("Moving to manual automation...")
+    for filename in failed_to_detect_center:
+        error = corneal_top_obj.generate_topography_maps(
+                base_dir,
+                filename,
+                center=center,
+                downsample=True,
+                blur=True,
+                err1=[args.gap1],
+                err2=[args.gap2],
+                center_selection="manual"
+            )
