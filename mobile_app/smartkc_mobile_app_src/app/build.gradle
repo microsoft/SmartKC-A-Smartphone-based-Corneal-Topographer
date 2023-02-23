@@ -28,11 +28,11 @@ android {
     buildTypes {
         debug {
             buildConfigField "String", "UPLOAD_URL", "\"https://url/pre/\""
-            buildConfigField "boolean", "UPLOAD_ENABLED", "true"
+            buildConfigField "boolean", "UPLOAD_ENABLED", "false"
         }
         release {
             buildConfigField "String", "UPLOAD_URL", "\"https://url/pre/\""
-            buildConfigField "boolean", "UPLOAD_ENABLED", "true"
+            buildConfigField "boolean", "UPLOAD_ENABLED", "false"
         }
         release {
             minifyEnabled false
