@@ -289,16 +289,17 @@ class CameraActivityNew : AppCompatActivity() {
                 val data = dataStore.data.first()
                 val selectedCameraKey = stringPreferencesKey(PreferenceKeys.CHOSEN_CAMERA)
                 val selectedCamera = data[selectedCameraKey]
-                Toast.makeText(applicationContext, selectedCamera, Toast.LENGTH_LONG).show()
-                if (selectedCamera != null) cameraSelector = CameraSelector.Builder().addCameraFilter {
-                    val filtered = it.filter {
-                        val cameraId = Camera2CameraInfo.fromCameraInfo(it.cameraInfo).cameraId
-                        return@filter cameraId == selectedCamera }
-                    val result = LinkedHashSet<Camera>()
-                    filtered.forEach { result.add(it) }
-                    result
+                if (selectedCamera != null) {
+                    cameraSelector = CameraSelector.Builder().addCameraFilter {
+                        val filtered = it.filter {
+                            val cameraId = Camera2CameraInfo.fromCameraInfo(it.cameraInfo).cameraId
+                            return@filter cameraId == selectedCamera }
+                        val result = LinkedHashSet<Camera>()
+                        filtered.forEach { result.add(it) }
+                        result
+                    }
+                        .build()
                 }
-                .build()
             }
 
             try {
