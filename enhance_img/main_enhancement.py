@@ -30,7 +30,7 @@ def enhance(img, downsample=False, blur=True):
         new_rows = 350
         new_cols = new_rows/aspect_ratio
 
-    img = cv2.resize(img,(np.int(new_cols),np.int(new_rows)))
+    img = cv2.resize(img,(np.int64(new_cols),np.int64(new_rows)))
 
     enhanced_img = image_enhance(img)
     enhanced_img = enhanced_img.astype(np.uint8)

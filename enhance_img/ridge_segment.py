@@ -63,8 +63,8 @@ def ridge_segment(im,blksze,thresh):
     im = normalise(im,0,1);    # normalise to get zero mean and unit standard deviation
     
     
-    new_rows =  np.int(blksze * np.ceil((np.float(rows))/(np.float(blksze))))
-    new_cols =  np.int(blksze * np.ceil((np.float(cols))/(np.float(blksze))))
+    new_rows =  np.int64(blksze * np.ceil((np.float64(rows))/(np.float64(blksze))))
+    new_cols =  np.int64(blksze * np.ceil((np.float64(cols))/(np.float64(blksze))))
     
     padded_img = np.zeros((new_rows,new_cols));
     stddevim = np.zeros((new_rows,new_cols));

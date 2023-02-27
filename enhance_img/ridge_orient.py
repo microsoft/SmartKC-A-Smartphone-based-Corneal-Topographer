@@ -66,7 +66,7 @@ def ridge_orient(im, gradientsigma, blocksigma, orientsmoothsigma):
     if np.remainder(sze,2) == 0:
         sze = sze+1;
         
-    gauss = cv2.getGaussianKernel(np.int(sze),gradientsigma);
+    gauss = cv2.getGaussianKernel(np.int64(sze),gradientsigma);
     f = gauss * gauss.T;
     
     fy,fx = np.gradient(f);     #Gradient of Gaussian
@@ -85,7 +85,7 @@ def ridge_orient(im, gradientsigma, blocksigma, orientsmoothsigma):
     
     sze = np.fix(6*blocksigma);
     
-    gauss = cv2.getGaussianKernel(np.int(sze),blocksigma);
+    gauss = cv2.getGaussianKernel(np.int64(sze),blocksigma);
     f = gauss * gauss.T;
     
     Gxx = ndimage.convolve(Gxx,f);
@@ -103,7 +103,7 @@ def ridge_orient(im, gradientsigma, blocksigma, orientsmoothsigma):
         sze = np.fix(6*orientsmoothsigma);
         if np.remainder(sze,2) == 0:
             sze = sze+1;    
-        gauss = cv2.getGaussianKernel(np.int(sze),orientsmoothsigma);
+        gauss = cv2.getGaussianKernel(np.int64(sze),orientsmoothsigma);
         f = gauss * gauss.T;
         cos2theta = ndimage.convolve(cos2theta,f); # Smoothed sine and cosine of
         sin2theta = ndimage.convolve(sin2theta,f); # doubled angles

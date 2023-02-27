@@ -77,7 +77,7 @@ def ridge_filter(im, orient, freq, kx, ky):
     sigmax = 1/unfreq[0]*kx;
     sigmay = 1/unfreq[0]*ky;
     
-    sze = np.int(np.round(3*np.max([sigmax,sigmay])));
+    sze = np.int64(np.round(3*np.max([sigmax,sigmay])));
     
     x,y = np.meshgrid(np.linspace(-sze,sze,(2*sze + 1)),np.linspace(-sze,sze,(2*sze + 1)));
     
@@ -85,7 +85,7 @@ def ridge_filter(im, orient, freq, kx, ky):
     
     filt_rows, filt_cols = reffilter.shape;
 
-    angleRange = np.int(180 / angleInc)
+    angleRange = np.int64(180 / angleInc)
 
     gabor_filter = np.array(np.zeros((angleRange,filt_rows,filt_cols)));
 
