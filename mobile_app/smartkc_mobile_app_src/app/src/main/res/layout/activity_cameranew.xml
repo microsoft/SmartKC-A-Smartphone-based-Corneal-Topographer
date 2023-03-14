@@ -157,7 +157,7 @@
         android:elevation="4sp"
         android:src="@drawable/camera" />
 
-    <Button
+    <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/lock_button"
         android:layout_width="96sp"
         android:layout_height="64sp"
@@ -168,7 +168,7 @@
         android:text="Lock Cross"
         />
 
-    <Button
+    <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/lock_capture"
         android:layout_width="128sp"
         android:layout_height="64sp"

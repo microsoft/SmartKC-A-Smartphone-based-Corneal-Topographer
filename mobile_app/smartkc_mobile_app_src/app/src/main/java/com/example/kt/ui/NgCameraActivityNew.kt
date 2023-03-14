@@ -113,26 +113,11 @@ class NgCameraActivityNew : AppCompatActivity() {
         camera_capture_button.setOnClickListener { takePhoto() }
         // setup lock_button listener
         lock_button.setOnClickListener{
-            if(lock_button_flag){
-                lock_button_flag = false
-                lock_button.setText("Unlock Cross")
-            }
-            else{
-                lock_button_flag = true
-                lock_button.setText("Lock Cross")
-            }
-
+            lock_button_flag = lock_button.isChecked
         }
         // auto_capture lock
         lock_capture.setOnClickListener{
-            if(lock_auto_capture_flag){
-                lock_auto_capture_flag = false
-                lock_capture.setText("Unlock Auto-Click")
-            }
-            else{
-                lock_auto_capture_flag = true
-                lock_capture.setText("Lock Auto-Click")
-            }
+            lock_auto_capture_flag = lock_capture.isChecked
         }
 
         MainActivity.PACKAGE_NAME = getApplicationInfo().loadLabel(getPackageManager()).toString()
@@ -225,7 +210,7 @@ class NgCameraActivityNew : AppCompatActivity() {
                     //Log.e(TAG, "Current counts: " + currentCounts + " maxCounts " + maxCounts)
                     if (currentCounts >= maxCounts) {
                         //cameraProvider.unbindAll()
-                        val intent = Intent(this@NgCameraActivityNew, CheckImages::class.java)
+                        val intent = Intent(this@NgCameraActivityNew, NgCheckImages::class.java)
                         // add extras to intent
                         intent.putExtra("dir_name", dir_name)
                         intent.putExtra("left_right", left_right)
