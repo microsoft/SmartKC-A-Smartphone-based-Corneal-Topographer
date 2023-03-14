@@ -68,7 +68,7 @@ class NgCameraActivityNew : AppCompatActivity() {
     var time_diff = 2 // time difference b/w tap to focus and capture
     var frames_elapsed = 0
     val trigger_rate = 1
-    val zoom_factor = 2.0 // how much to zoom the image by
+    val zoom_factor = 1.0 // how much to zoom the image by
     var trigger_coords : FloatArray = floatArrayOf(0.0F, 0.0F)
     // lock_button flag
     var lock_button_flag: Boolean = true
