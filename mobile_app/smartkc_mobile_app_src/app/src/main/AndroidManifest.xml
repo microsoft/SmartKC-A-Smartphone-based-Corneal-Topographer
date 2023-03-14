@@ -67,6 +67,11 @@
         </activity>
 
         <activity
+            android:name=".ui.NgCheckImages"
+            android:label="CheckImages Activity">
+        </activity>
+
+        <activity
             android:name=".GetGTDataActivity"
             android:label="GT Data Activity">
         </activity>

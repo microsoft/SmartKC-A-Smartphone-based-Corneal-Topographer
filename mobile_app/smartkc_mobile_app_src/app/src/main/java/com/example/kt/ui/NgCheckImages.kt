@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
+import android.opengl.Visibility
 import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
@@ -20,6 +21,7 @@ import org.apache.commons.io.comparator.LastModifiedFileComparator
 import com.github.chrisbanes.photoview.PhotoView
 import com.opencsv.CSVWriter
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.android.synthetic.main.activity_checkimages.*
 import kotlinx.coroutines.runBlocking
 import org.opencv.imgproc.Imgproc
 import org.opencv.android.Utils
@@ -122,6 +124,11 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
             checkResult = try {
                 checkCenter(imageFiles[image_index].toString(), centerCutoff)
             } catch (e: Exception) {
+                runOnUiThread {
+                    var bitmap = BitmapFactory.decodeFile(imageFiles[image_index].toString())
+                    myimage.setImageBitmap(bitmap)
+                    addView()
+                }
                 Pair(false, arrayListOf("Center not found or empty image!"))
             }
             if (!checkResult.first) {
