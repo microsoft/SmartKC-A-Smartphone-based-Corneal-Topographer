@@ -56,6 +56,12 @@
         </activity>
 
         <activity
+            android:name=".ui.NgCameraActivityNew"
+            android:label="NgCamera ActivityNew"
+            android:screenOrientation="portrait">
+        </activity>
+
+        <activity
             android:name=".CheckImages"
             android:label="CheckImages Activity">
         </activity>
