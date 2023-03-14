@@ -32,6 +32,7 @@ import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+import kotlin.collections.ArrayList
 
 @AndroidEntryPoint
 class NgCheckImages : AppCompatActivity(), View.OnClickListener {
@@ -115,22 +116,18 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
             return
         } else {
             // Find and display center, check if No then disable Yes
-            var check = false
-            check = try {
+            // CheckResult is a pair of boolean and string where boolean represents if it passed the check and
+            // string represents the reason for failure
+            var checkResult: Pair<Boolean, ArrayList<String>> = Pair(false, arrayListOf())
+            checkResult = try {
                 checkCenter(imageFiles[image_index].toString(), centerCutoff)
             } catch (e: Exception) {
-                runOnUiThread { pressNo() }
-                e.printStackTrace()
-                Log.e("CHECK_IMAGES", "Center not found or empty image!")
-                return
+                Pair(false, arrayListOf("Center not found or empty image!"))
             }
-            if (!check) {
+            if (!checkResult.first) {
                 runOnUiThread {
-                    val btnYes = findViewById<View>(R.id.yes_btn) as Button
-                    btnYes.isClickable = false
-                    btnYes.visibility = View.GONE
                     val questionView = findViewById<TextView>(R.id.questionView)
-                    questionView.text = "The image is not good!"
+                    questionView.text = "Checks failed for image: " + checkResult.second.joinToString()
                 }
             }
             runOnUiThread { // set prompt text and Image view
@@ -336,7 +333,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    private fun checkCenter(currImage: String, centerThresh: Float): Boolean {
+    private fun checkCenter(currImage: String, centerThresh: Float): Pair<Boolean, ArrayList<String>> {
 
         //String imageString = imageFile.toString();
         var bitmap = BitmapFactory.decodeFile(currImage)
@@ -451,7 +448,11 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
             val imgView = findViewById<View>(R.id.myimage) as PhotoView
             imgView.setImageBitmap(bitmapSmall)
         }
-        return check1 && check2 && check3
+        var checkFailures = arrayListOf<String>()
+        if (!check1) checkFailures.add("Not centered")
+        if (!check2) checkFailures.add("Incorrect exposure")
+        if (!check3) checkFailures.add("Not sharp")
+        return Pair(check1 && check2 && check3, checkFailures)
     }
 
     private fun exifToDegrees(exifOrientation: Int): Int {
