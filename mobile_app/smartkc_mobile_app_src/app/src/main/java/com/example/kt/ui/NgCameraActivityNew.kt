@@ -112,12 +112,12 @@ class NgCameraActivityNew : AppCompatActivity() {
         // Set up the listener for take photo button
         camera_capture_button.setOnClickListener { takePhoto() }
         // setup lock_button listener
-        lock_button.setOnClickListener{
-            lock_button_flag = lock_button.isChecked
+        unlock_cross_switch.setOnClickListener{
+            lock_button_flag = !unlock_cross_switch.isChecked
         }
         // auto_capture lock
-        lock_capture.setOnClickListener{
-            lock_auto_capture_flag = lock_capture.isChecked
+        unlock_auto_capture_click.setOnClickListener{
+            lock_auto_capture_flag = !unlock_auto_capture_click.isChecked
         }
 
         MainActivity.PACKAGE_NAME = getApplicationInfo().loadLabel(getPackageManager()).toString()
@@ -405,7 +405,9 @@ class NgCameraActivityNew : AppCompatActivity() {
             // detect the central cross-hair
             var crosshair_center = arrayOf<Float>(trigger_coords[0] / ((viewFinder.width).toFloat() / matFixed.cols().toFloat()),
                 trigger_coords[1] / ((viewFinder.height).toFloat() / matFixed.rows().toFloat()))
-            if (frames_elapsed % trigger_rate == 0 && lock_button_flag) {
+            // Try to detect cross hair for every trigger rate if the user has unclocked the cross or it is the first time that
+            // we are trying to detect the cross hair (both trigger coordinates are zero)
+            if (frames_elapsed % trigger_rate == 0 && ((trigger_coords[0] == 0F && trigger_coords[1] == 0F) || !lock_button_flag)) {
                 // returns un-normalized mire center in the image not preview
                 var crossHairOutput = imageUtils.detectCrossHair(2.5,
                     baseminDist / normfactor,
@@ -430,8 +432,8 @@ class NgCameraActivityNew : AppCompatActivity() {
 
             //Log.e(TAG, "CHECKER "+frames_elapsed+" "+(baseminR / normfactor).toInt()+" "+(basemaxR / normfactor).toInt() +" "+matFixed.size())
             // detect the mire center
-            val start = (30*zoom_factor/normfactor).toInt(); val end = (100*zoom_factor/normfactor).toInt()
-            val jump = (10*zoom_factor/normfactor).toInt()
+            val start = (30).toInt(); val end = (100).toInt()
+            val jump = (10).toInt()
             val mire_center = imageUtils.detectMireCenter(2.5, baseminDist / normfactor, start, end, jump)
             // overlay cross hair
             val xx = mire_center[0] * ((viewFinder.width).toFloat() / imageUtils.image.cols().toFloat())
@@ -519,9 +521,11 @@ class NgCameraActivityNew : AppCompatActivity() {
 
 
             frames_elapsed += 1
-            runOnUiThread(Runnable {
-                progressBar.setProgress(100 * quality_counter / quality_threshold)
-            })
+            if (lock_auto_capture_flag) {
+                runOnUiThread(Runnable {
+                    progressBar.progress = 100 * quality_counter / quality_threshold
+                })
+            }
             if(quality_counter >= quality_threshold && (System.currentTimeMillis()-capture_timestamp)/1000 > capture_time_diff && lock_auto_capture_flag){
                 runOnUiThread(Runnable {
                     takePhoto()

@@ -47,7 +47,7 @@ class ImageUtils(var image: Mat) {
         val output_points = arrayOf<Float>(-1.0F, -1.0F) // output points
         var xx = 0F; var yy = 0F; var rCount = 0
         for(currRadius in minR..maxR step jump){
-            val detected_circles = imageChecker.detectCircles(image.clone(), dp, minDist, currRadius, currRadius + jump)
+            val detected_circles = imageChecker.detectCircles(image, dp, minDist, currRadius, currRadius + jump)
             if (detected_circles[2] > 0) {
                 xx += detected_circles[0]; yy += detected_circles[1]
                 rCount += 1
