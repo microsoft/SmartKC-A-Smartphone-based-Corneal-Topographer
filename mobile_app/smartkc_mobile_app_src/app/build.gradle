@@ -100,9 +100,6 @@ dependencies {
     //PhotoView
     implementation 'com.github.chrisbanes:PhotoView:2.1.4'
 
-    // crash reporter
-    compile 'com.balsikandar.android:crashreporter:1.0.9'
-
     // Room Dependency
     def room_version = "2.4.3"
 
