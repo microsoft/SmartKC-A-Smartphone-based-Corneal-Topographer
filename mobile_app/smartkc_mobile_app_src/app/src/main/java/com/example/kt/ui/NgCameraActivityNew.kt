@@ -159,6 +159,8 @@ class NgCameraActivityNew : AppCompatActivity() {
             return;
         }
 
+        capture_timestamp = System.currentTimeMillis()
+
         // if auto-focus not triggered, re-focus at center
         if (focus_timestamp == -1L || (System.currentTimeMillis()-focus_timestamp)/1000 >= time_diff) {
             focusAtCenter(trigger_coords[0], trigger_coords[1])
@@ -187,6 +189,7 @@ class NgCameraActivityNew : AppCompatActivity() {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     val savedUri = Uri.fromFile(photoFile)
                     val msg = "Photo capture succeeded: $savedUri"
+                    Log.d(TAG, msg)
                     // Record it in database
                     runBlocking {
                         val sharedPrefs = getSharedPreferences("KT_APP_PREFERENCES", MODE_PRIVATE)
@@ -196,11 +199,10 @@ class NgCameraActivityNew : AppCompatActivity() {
                         }
                         val fileNameParts = savedUri.toString().split("_")
                         val idx = fileNameParts[fileNameParts.size-1]
-                        val fileName = "${center_name}/${dir_name?.split("_")?.get(0)}/${left_right}/${idx}"
+                        val fileName = "${center_name}/${dir_name?.split("_")?.get(0)}/${left_right}/${System.currentTimeMillis()}_${idx}"
                         fileRepository.insertNewFileRecord(savedUri.toString(), fileName)
                     }
                     Toast.makeText(baseContext, "Counts:" + (currentCounts + 1) + "/" + maxCounts, Toast.LENGTH_SHORT).show()
-                    Log.d(TAG, msg)
                     // play capture sound
                     val sound = MediaActionSound()
                     sound.play(MediaActionSound.SHUTTER_CLICK)
@@ -394,13 +396,13 @@ class NgCameraActivityNew : AppCompatActivity() {
             val imageUtils = ImageUtils(matFixed)
 
             /* Do some image processing */
-            // add multiplying factor & choosing parameters for detecting circles based on 3000x4000 image
             val basewidth = 3000.0
             val baseheight = 4000.0
             val baseminDist = 1200.0*zoom_factor
             val baseminR = 595.0*zoom_factor
             val basemaxR = 615.0*zoom_factor
             val normfactor = sqrt((basewidth * basewidth + baseheight * baseheight) / (image.width * image.width + image.height * image.height))
+            // L2 Norm
 
             // detect the central cross-hair
             var crosshair_center = arrayOf<Float>(trigger_coords[0] / ((viewFinder.width).toFloat() / matFixed.cols().toFloat()),
@@ -432,21 +434,25 @@ class NgCameraActivityNew : AppCompatActivity() {
 
             //Log.e(TAG, "CHECKER "+frames_elapsed+" "+(baseminR / normfactor).toInt()+" "+(basemaxR / normfactor).toInt() +" "+matFixed.size())
             // detect the mire center
-            val start = (30).toInt(); val end = (100).toInt()
-            val jump = (10).toInt()
+            val start = (5).toInt(); val end = (40).toInt()
+            val jump = (4).toInt()
             val mire_center = imageUtils.detectMireCenter(2.5, baseminDist / normfactor, start, end, jump)
-            // overlay cross hair
-            val xx = mire_center[0] * ((viewFinder.width).toFloat() / imageUtils.image.cols().toFloat())
-            val yy = mire_center[1] * ((viewFinder.height).toFloat() / imageUtils.image.rows().toFloat())
-            val scale_factor = (zoom_factor*viewFinder.width/basewidth).toFloat()
-            // draw crossHair for mire
-            DrawUtils.plotCrossHair(cross_hair_mire, xx, yy, 10F)
+            // check if the center was detected
+            Log.i("mire_center:", "${mire_center[0]} + ${mire_center[1]}")
+            if (mire_center[0] != -1F && mire_center[1] != -1F) {
+                // overlay cross hair
+                val xx = mire_center[0] * ((viewFinder.width).toFloat() / imageUtils.image.cols().toFloat())
+                val yy = mire_center[1] * ((viewFinder.height).toFloat() / imageUtils.image.rows().toFloat())
+                val scale_factor = (zoom_factor*viewFinder.width/basewidth).toFloat()
+                // draw crossHair for mire
+                DrawUtils.plotCrossHair(cross_hair_mire, xx, yy, 10F)
 
-            // draw limbus pointer
-            val limbusPoints = mutableListOf(mutableListOf(xx - limbus_radius*scale_factor, yy, xx + limbus_radius*scale_factor, yy),
-                mutableListOf(xx - limbus_radius*scale_factor, yy - 10, xx-limbus_radius*scale_factor, yy + 10),
-                mutableListOf(xx + limbus_radius*scale_factor, yy - 10, xx+limbus_radius*scale_factor, yy + 10))
-            limbus_width.post { limbus_width.drawLimbus(limbusPoints) }
+                // draw limbus pointer
+                val limbusPoints = mutableListOf(mutableListOf(xx - limbus_radius*scale_factor, yy, xx + limbus_radius*scale_factor, yy),
+                    mutableListOf(xx - limbus_radius*scale_factor, yy - 10, xx-limbus_radius*scale_factor, yy + 10),
+                    mutableListOf(xx + limbus_radius*scale_factor, yy - 10, xx+limbus_radius*scale_factor, yy + 10))
+                limbus_width.post { limbus_width.drawLimbus(limbusPoints) }
+            }
 
 
             // image quality check

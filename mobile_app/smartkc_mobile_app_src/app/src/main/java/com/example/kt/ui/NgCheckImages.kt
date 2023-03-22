@@ -383,8 +383,8 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
         val crosshair_center = imageUtils.detectCrossHair(
             2.5,
             baseminDist / normfactor,
-            (baseminR / normfactor).toInt() - 5,
-            (basemaxR / normfactor).toInt() + 5
+            (baseminR / normfactor).toInt() - 2,
+            (basemaxR / normfactor).toInt() + 3
         )
         val start = (30 * zoom_factor / normfactor).toInt()
         val end = (100 * zoom_factor / normfactor).toInt()
@@ -432,7 +432,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
         offset_distance =
             dist * 30 / (2 * crosshair_center[2] + 0.000001) // update offset distance in mm
         val check1 =
-            offset_distance <= centerThresh // check 1: if the offset is within threshold in mm
+            offset_distance <= centerThresh*zoom_factor/normfactor && crosshair_center[2] > 0 // check 1: if the offset is within threshold in mm
         //Log.e("Counts", "CENTER_CUTOFF_PREFERENCE "+centerThresh+" Offset "+offset_distance+" dist in pixels "+dist);
         //image = this.image_checker.sharpen(image);
         //image = this.image_checker.autoCanny(image, 0.33);
