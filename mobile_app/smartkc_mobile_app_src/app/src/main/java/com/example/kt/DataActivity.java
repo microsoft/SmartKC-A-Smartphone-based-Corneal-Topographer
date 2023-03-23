@@ -60,20 +60,12 @@ implements OnClickListener{
                 Toast toast = Toast.makeText(this, "Enter the Patient Id", Toast.LENGTH_SHORT);
                 toast.setGravity(Gravity.CENTER_VERTICAL, 0, 200);
 
-                // set color for toast
-                View view = toast.getView();
-                TextView text = view.findViewById(android.R.id.message);
-                text.setTextColor(Color.RED);
                 toast.show();
             }
             else if(patAge.length() == 0){
                 Toast toast = Toast.makeText(this, "Enter the Patient Age", Toast.LENGTH_SHORT);
                 toast.setGravity(Gravity.CENTER_VERTICAL, 0, 200);
 
-                // set color for toast
-                View view = toast.getView();
-                TextView text = view.findViewById(android.R.id.message);
-                text.setTextColor(Color.RED);
                 toast.show();
             }
 
