@@ -366,7 +366,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
         Utils.bitmapToMat(bitmap, imageFull)
         val image = Mat()
         Imgproc.resize(imageFull, image, Size((480 * 4).toDouble(), (640 * 4).toDouble()), 0.0, 0.0, Imgproc.INTER_LINEAR)
-        val zoom_factor = 2
+        val zoom_factor = 1
         // add multiplying factor & choosing parameters for detecting circles based on 3000x4000 image
         val basewidth = 3000.0f
         val baseheight = 4000.0f
@@ -386,9 +386,9 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
             (baseminR / normfactor).toInt() - 2,
             (basemaxR / normfactor).toInt() + 3
         )
-        val start = (30 * zoom_factor / normfactor).toInt()
-        val end = (100 * zoom_factor / normfactor).toInt()
-        val jump = (10 * zoom_factor / normfactor).toInt()
+        val start = (5).toInt()
+        val end = (40).toInt()
+        val jump = (4).toInt()
         val mire_center =
             imageUtils.detectMireCenter(2.5, baseminDist / normfactor, start, end, jump)
 
