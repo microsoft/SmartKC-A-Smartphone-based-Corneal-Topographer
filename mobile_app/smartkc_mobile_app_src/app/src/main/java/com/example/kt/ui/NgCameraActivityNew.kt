@@ -441,8 +441,8 @@ class NgCameraActivityNew : AppCompatActivity() {
             Log.i("mire_center:", "${mire_center[0]} + ${mire_center[1]}")
             if (mire_center[0] != -1F && mire_center[1] != -1F) {
                 // overlay cross hair
-                val xx = mire_center[0] * ((viewFinder.width).toFloat() / imageUtils.image.cols().toFloat())
-                val yy = mire_center[1] * ((viewFinder.height).toFloat() / imageUtils.image.rows().toFloat())
+                val xx = mire_center[0] * ((viewFinder.width).toFloat() / image.height.toFloat())
+                val yy = mire_center[1] * ((viewFinder.height).toFloat() / image.width.toFloat())
                 val scale_factor = (zoom_factor*viewFinder.width/basewidth).toFloat()
                 // draw crossHair for mire
                 DrawUtils.plotCrossHair(cross_hair_mire, xx, yy, 10F)
