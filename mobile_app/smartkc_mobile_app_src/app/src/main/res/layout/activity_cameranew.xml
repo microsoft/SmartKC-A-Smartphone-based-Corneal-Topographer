@@ -165,7 +165,7 @@
         android:layout_marginRight="16sp"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:text="Unlock Cross"
+        android:text="Cross Locked"
         />
 
     <androidx.appcompat.widget.SwitchCompat
@@ -176,7 +176,7 @@
         android:layout_marginRight="16sp"
         app:layout_constraintRight_toLeftOf="@+id/unlock_cross_switch"
         app:layout_constraintTop_toTopOf="parent"
-        android:text="Unlock Auto-Click"
+        android:text="Manual Click"
         />
 
     <ProgressBar

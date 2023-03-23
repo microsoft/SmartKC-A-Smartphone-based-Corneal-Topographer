@@ -71,7 +71,7 @@ class NgCameraActivityNew : AppCompatActivity() {
     val zoom_factor = 1.0 // how much to zoom the image by
     var trigger_coords : FloatArray = floatArrayOf(0.0F, 0.0F)
     // lock_button flag
-    var lock_button_flag: Boolean = true
+    var lock_button_flag: Boolean = false
     // lock auto_capture
     var lock_auto_capture_flag: Boolean = true
     // correct cut-off 25 pixels
@@ -113,7 +113,7 @@ class NgCameraActivityNew : AppCompatActivity() {
         camera_capture_button.setOnClickListener { takePhoto() }
         // setup lock_button listener
         unlock_cross_switch.setOnClickListener{
-            lock_button_flag = !unlock_cross_switch.isChecked
+            lock_button_flag = unlock_cross_switch.isChecked
         }
         // auto_capture lock
         unlock_auto_capture_click.setOnClickListener{
