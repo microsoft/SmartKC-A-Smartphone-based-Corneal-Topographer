@@ -5,6 +5,7 @@ Created on Mon Apr 18 11:42:58 2016
 @author: utkarsh
 """
 
+import logging
 import numpy as np
 import cv2
 import sys
@@ -17,11 +18,13 @@ def enhance(img, downsample=False, blur=True):
     if(len(img.shape)>2):
          img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-    if blur == True:
+    if downsample == True and blur == True:
         #img = cv2.GaussianBlur(img, (3,3),0)
         img = cv2.GaussianBlur(img, (5, 5), 10)
         #img = cv2.GaussianBlur(img, (7,7),10)
         #img = cv2.GaussianBlur(img, (15,15),10)
+    elif not downsample and blur == True:
+        img = cv2.GaussianBlur(img, (7,7),10)
     rows,cols = np.shape(img)
     aspect_ratio = np.double(rows)/np.double(cols)
     new_rows, new_cols = rows, cols
@@ -62,7 +65,7 @@ def detect_circle(img, ups=1):#Detecting hough circles in the gray scale image.
                         a, b, r = pt[0], pt[1], pt[2]                   
                         pt0 = a                                         
                         pt1 = b                                         
-                        print('Center detected:', a,b)                                               
+                        logging.info('Center detected: {}, {}'.format(a,b))
                         # Draw the circumference of the circle.         
                         cv2.circle(orig, (a, b), r, (100, 255, 0), 2)   
                         break                                           

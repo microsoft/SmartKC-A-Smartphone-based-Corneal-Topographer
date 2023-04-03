@@ -101,14 +101,10 @@ def save_stats(epoch, iteration, value, flag, output_dir):
 								    
     arr = np.asarray([epoch, iteration]+value)                      
     np.savetxt(os.path.join(output_dir, flag+str(epoch)+'_'+str(iteration)+'.txt'), arr)
-    print(flag+" stats saved") 
+    #print(flag+" stats saved") 
 
 def guidance_weights(guide, scale):
-    
     weights = torch.where(guide != 0, torch.tensor(scale), torch.tensor(1))
-
     return weights.float()
-
-
 
 ###############END TRAIN UTILITY FUNCTIONS############################

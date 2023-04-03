@@ -1,8 +1,32 @@
 #!/usr/bin/env python
 # Author: Siddhartha Gairola (t-sigai at microsoft dot com))
 import math
+import logging
 import numpy as np
 import cv2
+from utils import plot_line
+
+def compute_simk(curv_map, center, cutoff_r):
+
+	filter_mask = np.zeros((curv_map.shape[0], curv_map.shape[1], 3)).astype(np.uint8)
+	filter_mask = cv2.circle(filter_mask, center, cutoff_r, (255, 255, 255), -1)[:,:,0]
+	filter_mask[filter_mask>0] = 1
+
+	mean_curv_list = []
+	for angle in range(0, 180):
+		curr_meridian = np.zeros((curv_map.shape[0], curv_map.shape[1], 3)) 
+		curr_meridian_1 = plot_line(curr_meridian, center, angle)
+		curr_meridian_2 = plot_line(curr_meridian, center, angle+180)
+		curr_meridian = curr_meridian_1 + curr_meridian_2
+		curr_meridian = curr_meridian[:,:,0]
+		curr_meridian = curr_meridian*filter_mask
+		mean_curv_list.append((curv_map[curr_meridian>0]).mean()*337.5)
+
+	min_idx = np.argmin(mean_curv_list) # simK2 angle
+	max_idx = (min_idx+90)%len(mean_curv_list) # simK1 angle
+	logging.info("min_idx: {}, max_idx: {}".format(min_idx, max_idx))
+	logging.info("SimK {}, {}".format(mean_curv_list[min_idx], mean_curv_list[max_idx]))
+	return round(mean_curv_list[min_idx],2), round(mean_curv_list[max_idx],2), min_idx, max_idx
 
 def compute_tilt_factor(curr_map, act_map, r1, r2, center, angle, image_name, output_folder="out"):
 	mask = np.zeros((curr_map.shape[0], curr_map.shape[1], 3)).astype(np.uint8)
@@ -33,8 +57,8 @@ def compute_tilt_factor(curr_map, act_map, r1, r2, center, angle, image_name, ou
 
 	act_map = cv2.circle(act_map, p_max, r1, (0,255,0), 2)
 	act_map = cv2.circle(act_map, p_min, r1, (0,0,255), 2)
-	#print(image_name, "max_steep", max_steep, "min_steep", min_steep))
-	cv2.imwrite(output_folder+"/" + image_name + "/" + image_name + '_tilt_factor.png', act_map)
+	logging.info("{} max_steep: {}, min_stepp: {}".format(image_name, max_steep, min_steep))
+	#cv2.imwrite(output_folder+"/" + image_name + "/" + image_name + '_tilt_factor.png', act_map)
 	return max_steep, min_steep
 
 def clmi_ppk(curv_map, axial_map, r_2, r_8, center):
@@ -87,8 +111,8 @@ def clmi_ppk(curv_map, axial_map, r_2, r_8, center):
 
 	clmi = clmi*337.5
 	ppk = np.exp(-6.4483+2.1319*clmi)/(1+np.exp(-6.4483+2.1319*clmi))
-	ppk, clmi = round(ppk, 2), round(clmi, 2)
-	#print("PPK", ppk, "CLMI", clmi, "M1", m1, "M2", m2)
+	ppk, clmi = round(ppk, 2), round(clmi, 2) # rounding off
+	logging.info("PPK: {} CLMI: {} M1: {} M2: {}".format(ppk, clmi, m1, m2))
 
 	axial_map = cv2.circle(axial_map, p1, r_2, (0,255,0), 2)
 	axial_map = cv2.circle(axial_map, p2, r_2, (0,0,255), 2)
@@ -147,6 +171,6 @@ def KISA(curv_map, center, coords, r_3, AST, start_angle=0, end_angle=360, jump=
 	kisa = central_k*I_S*AST*SRAX*0.33
 	kisa = round(kisa, 2)
 
-	#print("K", central_k, "SRAX", SRAX, "I-S", I_S)
-	#print("KISA", kisa)
+	logging.info("K: {} SRAX: {} I-S: {} KISA: {}".format(central_k, SRAX, I_S, kisa))
+	
 	return kisa, central_k, SRAX, I_S

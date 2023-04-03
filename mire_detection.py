@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Author: Siddhartha Gairola (t-sigai at microsoft dot com))
+import logging
 from utils import *
 from scipy.signal import medfilt
 
@@ -115,7 +116,8 @@ def curve_fit_fill(r_pixels_list, skip_angles=[], jump=1, deg=2):
 
 def process(image_seg, image_orig, center, 
     jump=2, start_angle=0, end_angle=360):
-    print("Processing ...")
+    logging.info("Processing ...")
+
     image_or = image_seg.copy() 
     image_and = np.zeros_like(image_seg)
     image_mp = image_orig.copy()
@@ -136,7 +138,7 @@ def process(image_seg, image_orig, center,
         image_and = cv2.bitwise_or(image_and, temp, mask=None)
         image_mp = plot_color_rb(image_mp, cent)
 
-    print("Processing Done!")
+    logging.info("Processing Done!")
     # remember image_cent_list is a list of list, that has 
     # centroids with {(x,y)} order and has length as number of angles
     return image_cent_list, center, [image_or, image_and, image_mp]
@@ -144,7 +146,7 @@ def process(image_seg, image_orig, center,
 def clean_points(image_cent_list, image_gray, image_name, center, 
     n_mires=20, jump=2, start_angle=0, end_angle=360, output_folder="out"):
     
-    print("Cleaning ...")
+    logging.info("Cleaning ...")
     image_gray = np.dstack((image_gray, np.dstack((image_gray, image_gray))))
     coords, r_pixels = [], []
     plt.figure()
@@ -193,16 +195,16 @@ def clean_points(image_cent_list, image_gray, image_name, center,
     image_gray = plot_color_rb(image_gray, coords_fixed)
     cv2.imwrite(output_folder+"/" + image_name + "/" + image_name + "_mp_clean.png", image_gray)
 
-    print("Cleaning Done!")
+    logging.info("Cleaning Done!")
     # note that coords_fixed has order of coords as {(y,x)}
-    return r_pixels, coords_fixed
+    return r_pixels, coords_fixed, image_gray
 
 def clean_points_support(image_cent_list, image_gray, image_name, 
     center, n_mires=20, jump=2, start_angle=0, end_angle=360, 
     skip_angles=[], output_folder="out"):
 
     # NOTE: THIS IS HAS NOT BEEN TESTED WELL ENOUGH
-    print("Cleaning ...")
+    logging.info("Cleaning ...")
     image_gray = np.dstack((image_gray, np.dstack((image_gray, image_gray))))
 
     r_pixels = []
@@ -247,7 +249,7 @@ def clean_points_support(image_cent_list, image_gray, image_name,
         r_pixels.append(r_pixels_temp)
 
     plt.legend()
-    plt.savefig('out/'+image_name+'/plots.png')
+    #plt.savefig('out/'+image_name+'/plots.png')
     plt.close()
 
     # skip first mire
@@ -272,7 +274,7 @@ def clean_points_support(image_cent_list, image_gray, image_name,
 
         coords_fixed.append(coords_temp)
 
-    cv2.imwrite(output_folder+'/'+image_name+'/'+image_name+'_mp_fitted.png', image_gray)
+    #cv2.imwrite(output_folder+'/'+image_name+'/'+image_name+'_mp_fitted.png', image_gray)
 
-    print("Cleaning Done!")
-    return r_pixels, coords_fixed
+    logging.info("Cleaning Done!")
+    return r_pixels, coords_fixed, image_gray

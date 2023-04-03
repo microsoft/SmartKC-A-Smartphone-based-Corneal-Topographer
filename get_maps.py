@@ -1,4 +1,5 @@
 import math
+import logging
 import numpy as np
 import cv2
 from sklearn.cluster import KMeans
@@ -133,7 +134,6 @@ def generate_map(blank, gt_pal, gt_r, center, normal_r, image, neighs=9, weights
             mn = 1e9
             curr = blank[i,j]
             for k, x in enumerate(gt_r):
-                #print(x)
                 diff = abs(curr - x)
                 if diff < mn:
                     mn = diff
@@ -150,7 +150,7 @@ def generate_map(blank, gt_pal, gt_r, center, normal_r, image, neighs=9, weights
                 blank[i, j] = 0
     # show the axial map
     output = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
-    cv2.imwrite('out/'+str(weights)+'_'+str(neighs)+'_'+image+'_heatmap.png', output)
+    #cv2.imwrite('out/'+str(weights)+'_'+str(neighs)+'_'+image+'_heatmap.png', output)
     return blank
 
 def generate_errormap(blank, gt_pal, gt_r, center, normal_r, image):
@@ -172,11 +172,11 @@ def generate_errormap(blank, gt_pal, gt_r, center, normal_r, image):
     for idx, (i, j) in enumerate(x_test):
         blank[i,j] = y[idx]
 
-    print(np.unique(blank), "unique output", np.max(blank), np.min(blank))
+    #print(np.unique(blank), "unique output", np.max(blank), np.min(blank))
     output = np.abs(blank)*255
-    print(np.unique(output), "unique 255", np.max(output), np.min(output))
+    #print(np.unique(output), "unique 255", np.max(output), np.min(output))
     output = output.astype(np.uint8)
-    print(np.unique(output), "unique uint8", np.max(output), np.min(output))
+    #print(np.unique(output), "unique uint8", np.max(output), np.min(output))
     output = cv2.applyColorMap(output, cv2.COLORMAP_JET)
 
     # keep only in a circle
@@ -187,4 +187,4 @@ def generate_errormap(blank, gt_pal, gt_r, center, normal_r, image):
                 output[i, j] = 0
     # show the axial map
     #output = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
-    cv2.imwrite('out/'+image+'_errormap.png', output)
+    #cv2.imwrite('out/'+image+'_errormap.png', output)
