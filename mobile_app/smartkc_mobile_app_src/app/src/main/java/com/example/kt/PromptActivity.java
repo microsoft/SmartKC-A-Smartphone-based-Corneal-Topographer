@@ -7,6 +7,8 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageView;
 
+import com.example.kt.ui.NgCameraActivityNew;
+
 import java.util.HashMap;
 
 public class PromptActivity extends Activity
@@ -53,7 +55,7 @@ public class PromptActivity extends Activity
     public void onClick(View arg0) {
         if(arg0.getId() == R.id.goButton){
 
-            Intent intent = new Intent(this, CameraActivityNew.class);
+            Intent intent = new Intent(this, NgCameraActivityNew.class);
             // add extras to intent
             intent.putExtra("dir_name", dir_name);
             intent.putExtra("left_right", left_right);

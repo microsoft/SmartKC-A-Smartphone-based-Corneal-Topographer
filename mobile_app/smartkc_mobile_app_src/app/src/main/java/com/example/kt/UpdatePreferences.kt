@@ -1,9 +1,13 @@
 package com.example.kt
 
+import android.content.Context
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import android.widget.AdapterView.OnItemSelectedListener
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.datastore.core.DataStore
@@ -25,6 +29,7 @@ class UpdatePreferences : AppCompatActivity(), View.OnClickListener {
     lateinit var uploadUrlEt: EditText
     lateinit var uploadSecretEt: EditText
     lateinit var uploadSwitch: SwitchCompat
+    lateinit var spinner: Spinner
 
     @Inject
     lateinit var dataStore: DataStore<Preferences>
@@ -34,6 +39,7 @@ class UpdatePreferences : AppCompatActivity(), View.OnClickListener {
     val uploadUrlKey = stringPreferencesKey(PreferenceKeys.UPLOAD_URL)
     val uploadSecretKey = stringPreferencesKey(PreferenceKeys.UPLOAD_SECRET)
     val uploadEnabledKey = booleanPreferencesKey(PreferenceKeys.UPLOAD_ENABLED)
+    val selectedCameraKey = stringPreferencesKey(PreferenceKeys.CHOSEN_CAMERA)
 
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +51,16 @@ class UpdatePreferences : AppCompatActivity(), View.OnClickListener {
         uploadUrlEt = findViewById(R.id.update_upload_url_et)
         uploadSecretEt = findViewById(R.id.update_upload_secret_et)
         uploadSwitch = findViewById(R.id.upload_switch)
+        spinner = findViewById(R.id.camera_list_spinner)
+
+        // Get list of logical cameras
+        val cameraManager: CameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val cameraIds = cameraManager.cameraIdList.filter { id ->
+            cameraManager.getCameraCharacteristics(id).get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK
+        }
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, cameraIds)
+        spinner.adapter = adapter
 
         //get the Button reference
         val buttonClick = findViewById<View>(R.id.SavePreference)
@@ -62,11 +78,13 @@ class UpdatePreferences : AppCompatActivity(), View.OnClickListener {
             val uploadUrl = data[uploadUrlKey] ?: BuildConfig.UPLOAD_URL
             val uploadSecret = data[uploadSecretKey] ?: ""
             val uploadEnabled = data[uploadEnabledKey] ?: BuildConfig.UPLOAD_ENABLED
+            val selectedCamera = data[selectedCameraKey]
 
             centerCutoffEt.setText(centerCutOff.toString())
             uploadUrlEt.setText(uploadUrl)
             uploadSecretEt.setText(uploadSecret)
             uploadSwitch.isChecked = uploadEnabled
+            if(selectedCamera != null) spinner.setSelection(adapter.getPosition(selectedCamera))
             modifyUploadView(uploadEnabled)
         }
     }
@@ -100,6 +118,7 @@ class UpdatePreferences : AppCompatActivity(), View.OnClickListener {
                 val uploadUrlInput = uploadUrlEt.text.toString()
                 val uploadSecret = uploadSecretEt.text.toString()
                 val uploadEnabled = uploadSwitch.isChecked
+                val selectedCamera = spinner.selectedItem as String
 
                 if (centerCutOffInput.isNullOrEmpty() || uploadEnabled && (uploadUrlInput.isNullOrEmpty() || uploadSecret.isNullOrEmpty())) {
                     Toast.makeText(applicationContext, "Please provide input in all the fields", Toast.LENGTH_SHORT).show()
@@ -115,6 +134,7 @@ class UpdatePreferences : AppCompatActivity(), View.OnClickListener {
                 dataStore.edit { prefs -> prefs[uploadUrlKey] = uploadUrlInput }
                 dataStore.edit { prefs -> prefs[uploadSecretKey] = uploadSecret }
                 dataStore.edit { prefs -> prefs[uploadEnabledKey] = uploadEnabled }
+                dataStore.edit { prefs -> prefs[selectedCameraKey] = selectedCamera }
 
                 // raise toast
                 val toast = Toast.makeText(applicationContext, "Data Saved!", Toast.LENGTH_SHORT)

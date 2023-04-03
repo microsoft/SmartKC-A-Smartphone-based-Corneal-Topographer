@@ -1,9 +1,9 @@
 # Phone Attachment
 
 ## Requirement:
-1. **Placido head**: 3D-print `placido_head.stl` by following the 3D-print related instructions [below](#placido-head)
-1. **Placido base**: 3D-print `placido_base.stl` by following the 3D-print related instructions [below](#placido-base)
-1. **Diffuser**: 3D-print `diffuser.stl` by following the 3D-print related instructions [below](#diffuser)
+1. **Placido head**: 3D-print `placido_head.stl` (to modify the design, use `placido_head.step`) by following the 3D-print related instructions [below](#placido-head)
+1. **Placido base**: 3D-print `placido_base.stl` (to modify the design, use `placido_base.step`) by following the 3D-print related instructions [below](#placido-base)
+1. **Diffuser**: 3D-print `diffuser.stl` (to modify the design, use `diffuser.step`) by following the 3D-print related instructions [below](#diffuser)
 1. **Circular LED**: Use WS2812/WS2812B 12-bit RGB LED Ring (available for Rs 250 or 3$ on DigiKey, [Robocraze](https://robocraze.com/products/ws2812-12-bit-rgb-led-round), [ThinkRobotics](https://thinkrobotics.in/products/ws2812-5050-rgb-led-ring), etc.)
 1. **Development board**: Use ATtiny85 (Digispark) USB Development Board (available for Rs 325 or 4$ on DigiKey, [Robocraze](https://robocraze.com/products/attiny85-usb-development-board), [Robu](https://robu.in/product/attiny85-usb-development-board/), etc.)
 1. **Source code for Development board**: Use `attiny85_led_setup_code.ino` code and upload it in the ATtiny85 development board by following the instructions [below](#attiny85-development-board-related-instructions)

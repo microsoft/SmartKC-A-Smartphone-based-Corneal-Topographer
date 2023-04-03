@@ -11,15 +11,16 @@ Jinja2==3.1.2
 joblib==1.2.0
 kiwisolver==1.4.4
 MarkupSafe==2.1.1
-matplotlib==3.2.2
+matplotlib==3.7.0
 networkx==2.8.8
-numpy==1.18.1
+numpy==1.24.2
 nvidia-cublas-cu11==11.10.3.66
 nvidia-cuda-nvrtc-cu11==11.7.99
 nvidia-cuda-runtime-cu11==11.7.99
 nvidia-cudnn-cu11==8.5.0.96
-opencv-contrib-python==4.4.0.46
-pandas==1.1.1
+opencv-python==4.7.0.72
+opencv-contrib-python==4.7.0.72
+pandas==1.5.3
 Pillow==9.3.0
 pyparsing==3.0.9
 python-dateutil==2.8.2
@@ -40,4 +41,4 @@ tqdm==4.56.0
 typing_extensions==4.4.0
 urllib3==1.26.13
 Werkzeug==2.2.2
-zernike==0.0.15
+zernike==0.0.32

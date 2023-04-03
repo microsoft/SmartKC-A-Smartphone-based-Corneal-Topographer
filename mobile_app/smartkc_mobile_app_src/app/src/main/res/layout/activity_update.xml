@@ -105,14 +105,38 @@
         android:inputType="textPassword"
         android:textColor="#000000"/>
 
+    <TextView
+        android:id="@+id/camera_list_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/update_upload_secret_label"
+        android:layout_marginTop="16dp"
+        android:layout_marginHorizontal="8dp"
+        android:text="Camera"
+        android:textColor="#03A9F4"
+        android:textSize="16sp" />
+
+    <Spinner
+        android:id="@+id/camera_list_spinner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="@id/update_center_cutoff_et"
+        app:layout_constraintTop_toTopOf="@id/camera_list_label"
+        app:layout_constraintBottom_toBottomOf="@id/camera_list_label"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginEnd="8dp"
+        android:padding="8dp"
+        android:textColor="#000000"/>
+
 
     <Button
         android:id="@+id/SavePreference"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintLeft_toLeftOf="@id/update_upload_secret_label"
-        app:layout_constraintRight_toRightOf="@id/update_upload_secret_et"
-        app:layout_constraintTop_toBottomOf="@id/update_upload_secret_et"
+        app:layout_constraintRight_toRightOf="@id/camera_list_spinner"
+        app:layout_constraintTop_toBottomOf="@id/camera_list_spinner"
         android:layout_marginTop="24dp"
         android:text="Save"
         android:textSize="18sp" />
