@@ -68,7 +68,7 @@ class NgCameraActivityNew : AppCompatActivity() {
     var time_diff = 2 // time difference b/w tap to focus and capture
     var frames_elapsed = 0
     val trigger_rate = 1
-    val zoom_factor = 1.0 // how much to zoom the image by
+    val zoom_factor = 2.0 // how much to zoom the image by
     var trigger_coords : FloatArray = floatArrayOf(0.0F, 0.0F)
     // lock_button flag
     var lock_button_flag: Boolean = false
@@ -434,15 +434,15 @@ class NgCameraActivityNew : AppCompatActivity() {
 
             //Log.e(TAG, "CHECKER "+frames_elapsed+" "+(baseminR / normfactor).toInt()+" "+(basemaxR / normfactor).toInt() +" "+matFixed.size())
             // detect the mire center
-            val start = (5).toInt(); val end = (40).toInt()
-            val jump = (4).toInt()
+            val start = (30*zoom_factor/normfactor).toInt(); val end = (100*zoom_factor/normfactor).toInt()
+            val jump = (10*zoom_factor/normfactor).toInt()
             val mire_center = imageUtils.detectMireCenter(2.5, baseminDist / normfactor, start, end, jump)
             // check if the center was detected
             Log.i("mire_center:", "${mire_center[0]} + ${mire_center[1]}")
             if (mire_center[0] != -1F && mire_center[1] != -1F) {
                 // overlay cross hair
-                val xx = mire_center[0] * ((viewFinder.width).toFloat() / image.height.toFloat())
-                val yy = mire_center[1] * ((viewFinder.height).toFloat() / image.width.toFloat())
+                val xx = mire_center[0] * ((viewFinder.width).toFloat() / imageUtils.image.cols().toFloat())
+                val yy = mire_center[1] * ((viewFinder.height).toFloat() / imageUtils.image.rows().toFloat())
                 val scale_factor = (zoom_factor*viewFinder.width/basewidth).toFloat()
                 // draw crossHair for mire
                 DrawUtils.plotCrossHair(cross_hair_mire, xx, yy, 10F)

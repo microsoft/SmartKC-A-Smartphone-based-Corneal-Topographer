@@ -114,12 +114,12 @@ class ImageCheck() {
 
         var gray = image.clone()
         Imgproc.cvtColor(image, gray, Imgproc.COLOR_RGB2GRAY)
-        val reducedNoise = gray.clone()
-        GaussianBlur(gray, reducedNoise,  Size(9.0, 9.0), 2.0, 2.0)
+//        val reducedNoise = gray.clone()
+//        GaussianBlur(gray, reducedNoise,  Size(9.0, 9.0), 2.0, 2.0)
         // detecting circles
         val circles = Mat()
         //Imgproc.HoughCircles(gray, circles, Imgproc.CV_HOUGH_GRADIENT, dp, minDist, 85.0, 100.0, minR, maxR)
-        Imgproc.HoughCircles(reducedNoise, circles, Imgproc.CV_HOUGH_GRADIENT, dp, minDist, 100.0, 100.0, minR, maxR)
+        Imgproc.HoughCircles(gray, circles, Imgproc.CV_HOUGH_GRADIENT, dp, minDist, 100.0, 100.0, minR, maxR)
 
         //Log.w("DETECT_CIRCLES", circles.cols().toString() + "")
         var xx = -1.0F; var yy = -1.0F; var rad = -1.0F
