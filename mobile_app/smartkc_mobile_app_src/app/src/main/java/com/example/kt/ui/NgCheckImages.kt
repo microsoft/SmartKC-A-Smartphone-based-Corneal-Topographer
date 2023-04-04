@@ -134,7 +134,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
             if (!checkResult.first) {
                 runOnUiThread {
                     val questionView = findViewById<TextView>(R.id.questionView)
-                    questionView.text = "Checks failed for image: " + checkResult.second.joinToString()
+                    questionView.text = "Checks failed for image: " + checkResult.second.joinToString() + ". Do you still want to use it?"
                 }
             }
             runOnUiThread { // set prompt text and Image view
