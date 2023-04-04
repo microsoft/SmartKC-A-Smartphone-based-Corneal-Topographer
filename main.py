@@ -94,6 +94,18 @@ parser.add_argument(
     type=float,
     help="Accounting for gap (in mm) between camera pupil and smallest ring.",
 )
+parser.add_argument(
+    "--center_selection",
+    default="auto",
+    type=str,
+    help="Flag for setting mode for center selection (auto or manual)",
+)
+parser.add_argument(
+    "--heuristics_cleanup_flag",
+    default=True,
+    type=bool,
+    help="Flag to run heuristics based cleanup of mire points",
+)
 
 class corneal_top_gen:
 
@@ -378,7 +390,8 @@ class corneal_top_gen:
         self, base_dir, image_name, crop_dims=(1200,1200), iso_dims=500, 
         center=(-1, -1), downsample=False, blur=True, upsample=None,
         err1=[0], err2=[0], skip_angles=[[-1, -1], [-1, -1]],
-        center_selection="manual",
+        center_selection="auto",
+        heuristics_cleanup_flag = True
     ):
 
         self.output = self.test_name
@@ -442,7 +455,9 @@ class corneal_top_gen:
 
         # clean points
         r_pixels, coords, image_mp = clean_points(
-            image_cent_list, image_gray.copy(), image_name, center, self.n_mires, self.jump, self.start_angle, self.end_angle, output_folder=self.output,
+            image_cent_list, image_gray.copy(), image_name, center, self.n_mires, self.jump, self.start_angle, self.end_angle, 
+            output_folder=self.output, 
+            heuristics_cleanup_flag = heuristics_cleanup_flag
         )
         #cv2.imwrite(os.path.dirname(__file__)+"_mp.png", image_mp)
         #r_pixels, coords = clean_points_support(image_cent_list, image_gray.copy(), image_name, 
@@ -576,5 +591,6 @@ if __name__ == "__main__":
             blur=True,
             err1=[args.gap1],
             err2=[args.gap2],
-            center_selection="auto"
+            center_selection=args.center_selection,
+            heuristics_cleanup_flag = args.heuristics_cleanup_flag,
         )

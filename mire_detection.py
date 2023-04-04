@@ -144,7 +144,8 @@ def process(image_seg, image_orig, center,
     return image_cent_list, center, [image_or, image_and, image_mp]
 
 def clean_points(image_cent_list, image_gray, image_name, center, 
-    n_mires=20, jump=2, start_angle=0, end_angle=360, output_folder="out"):
+    n_mires=20, jump=2, start_angle=0, end_angle=360, output_folder="out",
+    heuristics_cleanup_flag=True):
     
     logging.info("Cleaning ...")
     image_gray = np.dstack((image_gray, np.dstack((image_gray, image_gray))))
@@ -177,6 +178,9 @@ def clean_points(image_cent_list, image_gray, image_name, center,
     plt.legend()
     plt.savefig(output_folder+'/'+image_name+'/plots.png')
     plt.close()
+    
+    if (heuristics_cleanup_flag): 
+        r_pixels = cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name)
 
     # uncomment for real image, skip first mire
     r_pixels = r_pixels[1:]
@@ -278,3 +282,63 @@ def clean_points_support(image_cent_list, image_gray, image_name,
 
     logging.info("Cleaning Done!")
     return r_pixels, coords_fixed, image_gray
+
+def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name):
+
+    # Trying to ensure that the plots.png has smooth values: 
+    # (a) no value of zero, 
+    # (b) no higher mire touching a lower mire, 
+    # (c) no random peaks in one mire,
+
+    plt.figure()
+    r_pixels_cleaned = []
+    for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+        # Reshaping from mires x angle to angle x mires
+        r_pixels_angle = []
+        for mire in range(n_mires):
+            r_pixels_angle.append(r_pixels[mire][idx])
+        diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]
+
+        # Fixing (a) no value of zero
+        for i, val in enumerate(r_pixels_angle):
+            if val==0:
+                diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle[:i])][1:]
+                r_pixels_angle[i] = r_pixels_angle[i-1] + np.mean(diff_val)
+
+        # Fixing (b) no higher mire touching a lower mire
+        flag = True
+        while flag:
+            for i, val in enumerate(diff_val):
+                if val < 1:
+                    if i==1:
+                        diff_val[i] = diff_val[0]
+                    else:
+                        diff_val[i] = np.mean(diff_val[:i-1])
+                    r_pixels_angle[i+1] = r_pixels_angle[i+1] + diff_val[i]
+                    diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]            
+            flag = False
+            for i, val in enumerate(diff_val):
+                if val < 1:
+                    flag = True
+        
+        # Fixing (c) no random peaks in one mire      
+        diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]
+        while np.std(diff_val)>2:
+            max_idx = diff_val.index(max(diff_val))
+            r_pixels_angle[max_idx+1] = r_pixels_angle[max_idx] + np.mean(diff_val)
+            diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]
+        r_pixels_cleaned.append(r_pixels_angle)
+
+    # Reshaping from angle x mires to mires x angle 
+    r_pixels = []
+    for mire in range(n_mires):
+        r_pixels_temp = []
+        for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+            r_pixels_temp.append(r_pixels_cleaned[idx][mire])
+        plt.plot(np.arange(start_angle, end_angle, jump), r_pixels_temp, ls='-', label=str(mire))
+        r_pixels.append(r_pixels_temp)
+    plt.legend()
+    plt.savefig(output_folder+'/'+image_name+'/plots-modified.png')
+    plt.close()
+    
+    return r_pixels
