@@ -6,9 +6,9 @@ from azure.storage.blob import BlobServiceClient
 import os
 
 # Get connection string and secrets
-account_url = "https://smartkcstorage1.blob.core.windows.net"
+account_url = os.environ['account_url']
 default_credential = DefaultAzureCredential()
-container_name = 'test-container'
+container_name = os.environ['container_name']
 upload_secret = os.environ['upload_secret']
 
 
@@ -22,6 +22,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(
              "Unauthorized",
              status_code=401
+        )
+    
+    if (len(list(files)) == 0):
+        return func.HttpResponse(
+             "No file present",
+             status_code=400
         )
     
     if (len(list(files)) > 1):
