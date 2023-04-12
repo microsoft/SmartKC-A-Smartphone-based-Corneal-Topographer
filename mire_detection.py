@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Author: Siddhartha Gairola (t-sigai at microsoft dot com))
+import logging
 from utils import *
 from scipy.signal import medfilt
 
@@ -115,7 +116,8 @@ def curve_fit_fill(r_pixels_list, skip_angles=[], jump=1, deg=2):
 
 def process(image_seg, image_orig, center, 
     jump=2, start_angle=0, end_angle=360):
-    print("Processing ...")
+    logging.info("Processing ...")
+
     image_or = image_seg.copy() 
     image_and = np.zeros_like(image_seg)
     image_mp = image_orig.copy()
@@ -136,15 +138,16 @@ def process(image_seg, image_orig, center,
         image_and = cv2.bitwise_or(image_and, temp, mask=None)
         image_mp = plot_color_rb(image_mp, cent)
 
-    print("Processing Done!")
+    logging.info("Processing Done!")
     # remember image_cent_list is a list of list, that has 
     # centroids with {(x,y)} order and has length as number of angles
     return image_cent_list, center, [image_or, image_and, image_mp]
 
 def clean_points(image_cent_list, image_gray, image_name, center, 
-    n_mires=20, jump=2, start_angle=0, end_angle=360, output_folder="out"):
+    n_mires=20, jump=2, start_angle=0, end_angle=360, output_folder="out",
+    heuristics_cleanup_flag=True):
     
-    print("Cleaning ...")
+    logging.info("Cleaning ...")
     image_gray = np.dstack((image_gray, np.dstack((image_gray, image_gray))))
     coords, r_pixels = [], []
     plt.figure()
@@ -175,6 +178,9 @@ def clean_points(image_cent_list, image_gray, image_name, center,
     plt.legend()
     plt.savefig(output_folder+'/'+image_name+'/plots.png')
     plt.close()
+    
+    if (heuristics_cleanup_flag): 
+        r_pixels = cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name)
 
     # uncomment for real image, skip first mire
     r_pixels = r_pixels[1:]
@@ -193,16 +199,16 @@ def clean_points(image_cent_list, image_gray, image_name, center,
     image_gray = plot_color_rb(image_gray, coords_fixed)
     cv2.imwrite(output_folder+"/" + image_name + "/" + image_name + "_mp_clean.png", image_gray)
 
-    print("Cleaning Done!")
+    logging.info("Cleaning Done!")
     # note that coords_fixed has order of coords as {(y,x)}
-    return r_pixels, coords_fixed
+    return r_pixels, coords_fixed, image_gray
 
 def clean_points_support(image_cent_list, image_gray, image_name, 
     center, n_mires=20, jump=2, start_angle=0, end_angle=360, 
     skip_angles=[], output_folder="out"):
 
     # NOTE: THIS IS HAS NOT BEEN TESTED WELL ENOUGH
-    print("Cleaning ...")
+    logging.info("Cleaning ...")
     image_gray = np.dstack((image_gray, np.dstack((image_gray, image_gray))))
 
     r_pixels = []
@@ -247,7 +253,7 @@ def clean_points_support(image_cent_list, image_gray, image_name,
         r_pixels.append(r_pixels_temp)
 
     plt.legend()
-    plt.savefig('out/'+image_name+'/plots.png')
+    #plt.savefig('out/'+image_name+'/plots.png')
     plt.close()
 
     # skip first mire
@@ -272,7 +278,67 @@ def clean_points_support(image_cent_list, image_gray, image_name,
 
         coords_fixed.append(coords_temp)
 
-    cv2.imwrite(output_folder+'/'+image_name+'/'+image_name+'_mp_fitted.png', image_gray)
+    #cv2.imwrite(output_folder+'/'+image_name+'/'+image_name+'_mp_fitted.png', image_gray)
 
-    print("Cleaning Done!")
-    return r_pixels, coords_fixed
+    logging.info("Cleaning Done!")
+    return r_pixels, coords_fixed, image_gray
+
+def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name):
+
+    # Trying to ensure that the plots.png has smooth values: 
+    # (a) no value of zero, 
+    # (b) no higher mire touching a lower mire, 
+    # (c) no random peaks in one mire,
+
+    plt.figure()
+    r_pixels_cleaned = []
+    for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+        # Reshaping from mires x angle to angle x mires
+        r_pixels_angle = []
+        for mire in range(n_mires):
+            r_pixels_angle.append(r_pixels[mire][idx])
+        diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]
+
+        # Fixing (a) no value of zero
+        for i, val in enumerate(r_pixels_angle):
+            if val==0:
+                diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle[:i])][1:]
+                r_pixels_angle[i] = r_pixels_angle[i-1] + np.mean(diff_val)
+
+        # Fixing (b) no higher mire touching a lower mire
+        flag = True
+        while flag:
+            for i, val in enumerate(diff_val):
+                if val < 1:
+                    if i==1:
+                        diff_val[i] = diff_val[0]
+                    else:
+                        diff_val[i] = np.mean(diff_val[:i-1])
+                    r_pixels_angle[i+1] = r_pixels_angle[i+1] + diff_val[i]
+                    diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]            
+            flag = False
+            for i, val in enumerate(diff_val):
+                if val < 1:
+                    flag = True
+        
+        # Fixing (c) no random peaks in one mire      
+        diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]
+        while np.std(diff_val)>2:
+            max_idx = diff_val.index(max(diff_val))
+            r_pixels_angle[max_idx+1] = r_pixels_angle[max_idx] + np.mean(diff_val)
+            diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]
+        r_pixels_cleaned.append(r_pixels_angle)
+
+    # Reshaping from angle x mires to mires x angle 
+    r_pixels = []
+    for mire in range(n_mires):
+        r_pixels_temp = []
+        for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+            r_pixels_temp.append(r_pixels_cleaned[idx][mire])
+        plt.plot(np.arange(start_angle, end_angle, jump), r_pixels_temp, ls='-', label=str(mire))
+        r_pixels.append(r_pixels_temp)
+    plt.legend()
+    plt.savefig(output_folder+'/'+image_name+'/plots-modified.png')
+    plt.close()
+    
+    return r_pixels

@@ -144,9 +144,9 @@ def increase_res(image_gray, image_seg, image_edge, center, ups, image_name):
     image_seg = cv2.resize(image_seg, (image_seg.shape[1]*ups, image_seg.shape[0]*ups), interpolation=cv2.INTER_NEAREST)
     image_edge = cv2.resize(image_edge, (image_edge.shape[1]*ups, image_edge.shape[0]*ups), interpolation=cv2.INTER_NEAREST)
     center = (center[0]*ups, center[1]*ups)
-    cv2.imwrite('out/'+image_name+'_out_gray.png', image_gray)
-    cv2.imwrite('out/'+image_name+'_out_clean_inv.png', image_seg)
-    cv2.imwrite('out/'+image_name+'_out_edge_inv_filter.png', image_edge)
+    #cv2.imwrite('out/'+image_name+'_out_gray.png', image_gray)
+    #cv2.imwrite('out/'+image_name+'_out_clean_inv.png', image_seg)
+    #cv2.imwrite('out/'+image_name+'_out_edge_inv_filter.png', image_edge)
     return image_gray, image_seg, image_edge, center
 
 def plot_points(X,Y,Z, title='test', zlim=[-1,2]):

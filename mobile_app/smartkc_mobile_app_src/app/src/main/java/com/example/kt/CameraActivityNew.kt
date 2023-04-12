@@ -115,26 +115,26 @@ class CameraActivityNew : AppCompatActivity() {
         // Set up the listener for take photo button
         camera_capture_button.setOnClickListener { takePhoto() }
         // setup lock_button listener
-        lock_button.setOnClickListener{
+        unlock_cross_switch.setOnClickListener{
             if(lock_button_flag){
                 lock_button_flag = false
-                lock_button.setText("Unlock Cross")
+                unlock_cross_switch.setText("Unlock Cross")
             }
             else{
                 lock_button_flag = true
-                lock_button.setText("Lock Cross")
+                unlock_cross_switch.setText("Lock Cross")
             }
 
         }
         // auto_capture lock
-        lock_capture.setOnClickListener{
+        unlock_auto_capture_click.setOnClickListener{
             if(lock_auto_capture_flag){
                 lock_auto_capture_flag = false
-                lock_capture.setText("Unlock Auto-Click")
+                unlock_auto_capture_click.setText("Unlock Auto-Click")
             }
             else{
                 lock_auto_capture_flag = true
-                lock_capture.setText("Lock Auto-Click")
+                unlock_auto_capture_click.setText("Lock Auto-Click")
             }
         }
 

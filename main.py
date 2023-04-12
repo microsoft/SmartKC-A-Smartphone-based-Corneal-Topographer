@@ -3,6 +3,7 @@
 
 import os
 import cv2
+import logging
 from datetime import date
 import numpy as np
 import matplotlib.ticker as ticker
@@ -58,7 +59,7 @@ parser.add_argument(
     help="Camera parameters: sensor dimensions (width x height), focal length (space separated string)",
 )
 parser.add_argument(
-    "--placido_model_dimensions",
+    "--model_file",
     default=None,
     type=str,
     help="File with details about the placido head model",
@@ -89,15 +90,21 @@ parser.add_argument(
 )
 parser.add_argument(
     "--gap2",
-    default=5,
+    default=4,
     type=float,
     help="Accounting for gap (in mm) between camera pupil and smallest ring.",
 )
 parser.add_argument(
-    "--center_selection_mode",
-    default="manual",
+    "--center_selection",
+    default="auto",
     type=str,
-    help="Mode of center detection. Can be manual or auto"
+    help="Flag for setting mode for center selection (auto or manual)",
+)
+parser.add_argument(
+    "--heuristics_cleanup_flag",
+    default=True,
+    type=bool,
+    help="Flag to run heuristics based cleanup of mire points",
 )
 
 class corneal_top_gen:
@@ -118,7 +125,15 @@ class corneal_top_gen:
         self.zernike_degree = zernike_degree # degree of the zernike polynomial used for fitting
         if test_name == None:
             self.test_name = date.today().strftime("%d_%m_%Y")
-
+    
+    # to handle different phones with different intrinsic camera params
+    # TODO: Replace f_gap1_wrapper with f_gap1 in the code below
+    def f_gap1_wrapper(f_gap1, mire_radius, base_focal_length, base_res_width, base_sensor_width, current_res_width):
+        f_base_f_curr = base_focal_length/self.sensor_dims[2]
+        base_r_w_base_s_w = base_res_width/base_sensor_width
+        mire_radius = (mire_radius/currend_res_width*self.sensor_dims[0])*f_base_f_curr*base_r_w_base_s_w
+        mire_radius = mire_radius*2.0 # since original image was 6000x8000 at the time of calibration in simulation
+        return round(f_gap1(1/mire_radius), 2)
 
     def zernike_smoothening(self, image_name, plot_x, plot_y, plot_z, 
         xy_norm, xv, yv, max_r, relative_points):
@@ -131,8 +146,6 @@ class corneal_top_gen:
             cart = RZern(zern_deg)
             cart.make_cart_grid(plot_x, plot_y, scale_by=xy_norm)
             c1 = cart.fit_cart_grid(plot_z)[0]
-
-            #print(image_name, "Zernike Coeffs", list(c1)); print("XY_NORM", xy_norm);
 
             # for grid xv, yv
             cart = RZern(zern_deg)
@@ -147,6 +160,8 @@ class corneal_top_gen:
             k1_raw = k1.copy()
             inst_roc, axial_roc = 1 / k1, 1 / k2 # computing roc from curvatures
 
+            '''
+            # older simK computation
             check0 = np.isfinite(inst_roc) * (rho<=xy_norm*0.7) # getting the central 70% region
             error = (np.abs(inst_roc[check0]-7.8)/7.8).mean()*100 # computing error w.r.t a normal eye
             check0 = np.isfinite(inst_roc) * (rho <= 1.5) # getting only points within 3 mm diameter
@@ -162,6 +177,7 @@ class corneal_top_gen:
             sim_k1 = round(337.5 * k1.max(), 2)
             sim_k2 = round(337.5 * k2[np.argmax(k1)], 2)
             average_k, diff = round((sim_k1 + sim_k2) / 2.0, 2), round(sim_k1 - sim_k2, 2)
+            '''
 
             check = np.isnan(inst_roc); inst_roc[check] = 1e6;
             check = np.isnan(axial_roc); axial_roc[check] = 1e6;
@@ -188,12 +204,16 @@ class corneal_top_gen:
                 #str(err1) + "_" + str(zern_deg) + "_" + str(jump) + "_" + image_name,
                 #output_folder=self.output + "/" + image_name,
             )
-
+            
+            k2_raw = k2.copy()
+            '''
+            # old simK computation
             # re-computed after generating axial map using the averaging method
             k2_raw = k2.copy()
             k2 = k2[check0]
             sim_k2 = round(337.5 * k2[np.argmax(k1)], 2)
             average_k, diff = round((sim_k1 + sim_k2) / 2.0, 2), round(sim_k1 - sim_k2, 2)
+            '''
 
             # draw the 3mm, 5mm, 7mm circles
             r_1 = int(float(max_r)/xy_norm*0.5)
@@ -202,6 +222,11 @@ class corneal_top_gen:
             r_3_5 = int(float(max_r)/xy_norm*1.75)
             r_5 = int(float(max_r)/xy_norm*2.5)
             r_7 = int(float(max_r)/xy_norm*3.5)
+
+            # new simK computation
+            sim_k2, sim_k1, _, angle_k1 = compute_simk(k2.copy(), (k2.shape[1]//2, k2.shape[0]//2), r_3)
+            average_k, diff = round((sim_k1 + sim_k2) / 2.0, 2), round(sim_k1 - sim_k2, 2)
+            angle_k1 *= np.pi/180
 
             tan_map = draw_circles(
                 tan_map,
@@ -220,7 +245,7 @@ class corneal_top_gen:
             )
 
             # compute CLMI & PPK score
-            clmi_ppk(
+            ppk, _, _, _ = clmi_ppk(
                 k2_raw.copy(),
                 axial_map.copy(),
                 r_2,
@@ -242,10 +267,9 @@ class corneal_top_gen:
             compute_tilt_factor(k2_raw.copy(), axial_map.copy(), r_1, r_3_5, 
                 (k1_raw.shape[1]//2, k1_raw.shape[0]//2), angle_k1, image_name, output_folder=self.output)
 
-        return error, tan_map, axial_map, sim_k1, sim_k2, angle, average_k, diff
+        return error, tan_map, axial_map, sim_k1, sim_k2, round(-angle_k1 * 180 / np.pi, 1), average_k, diff, ppk
 
     def run_arc_step_gen_maps(self, image_seg, image_name, center, coords, h, w, err1=0, err2=0):
-
         blank = np.full((image_seg.shape[0], image_seg.shape[1]), -1e6, dtype="float64")
         elevation, error_map = blank.copy(), blank.copy()
 
@@ -356,22 +380,24 @@ class corneal_top_gen:
         ddy = np.linspace(-1.0, 1.0, int(2 * max_r))
         xv, yv = np.meshgrid(ddx, ddy)
 
-        error, tan_map, axial_map, sim_k1, sim_k2, angle, average_k, diff = self.zernike_smoothening(image_name, plot_x, plot_y, plot_z, 
+        error, tan_map, axial_map, sim_k1, sim_k2, angle, average_k, diff, ppk = self.zernike_smoothening(image_name, plot_x, plot_y, plot_z, 
             xy_norm, xv, yv, max_r, relative_points)
 
-        return error, tan_map, axial_map, [sim_k1, sim_k2, angle, average_k, diff]
+        return error, tan_map, axial_map, [sim_k1, sim_k2, angle, average_k, diff, ppk]
 
     # main runner function to generate topography maps from input image
     def generate_topography_maps(
         self, base_dir, image_name, crop_dims=(1200,1200), iso_dims=500, 
         center=(-1, -1), downsample=False, blur=True, upsample=None,
         err1=[0], err2=[0], skip_angles=[[-1, -1], [-1, -1]],
-        center_selection="manual",
+        center_selection="auto",
+        heuristics_cleanup_flag = True
     ):
 
         self.output = self.test_name
         self.skip_angles = skip_angles
 
+        
         # create output directory if not present
         if not os.path.isdir(self.output):
             os.mkdir(self.output)
@@ -379,6 +405,7 @@ class corneal_top_gen:
         # create directory to store output
         if not (os.path.isdir(self.output+"/"+image_name.split(".jpg")[0])):
             os.mkdir(self.output+"/"+image_name.split(".jpg")[0])
+        
 
         # Step 1: Image Centering and Cropping
         # Step 2: Image Enhancement, Cleaning & Enhancement
@@ -399,6 +426,10 @@ class corneal_top_gen:
             filter_radius=10,
             center_selection=center_selection
         )
+        
+        #cv2.imwrite(os.path.dirname(__file__)+"_gray.png", image_gray)
+        #cv2.imwrite(os.path.dirname(__file__)+"_seg.png", image_seg)
+        #cv2.imwrite(os.path.dirname(__file__)+"_edge.png", image_edge)
 
         if upsample is not None:
             self.ups = upsample
@@ -423,9 +454,12 @@ class corneal_top_gen:
         # plot_highres(image_cent_list, center, self.n_mires, self.jump, self.start_angle, self.end_angle)
 
         # clean points
-        r_pixels, coords = clean_points(
-            image_cent_list, image_gray.copy(), image_name, center, self.n_mires, self.jump, self.start_angle, self.end_angle, output_folder=self.output,
+        r_pixels, coords, image_mp = clean_points(
+            image_cent_list, image_gray.copy(), image_name, center, self.n_mires, self.jump, self.start_angle, self.end_angle, 
+            output_folder=self.output, 
+            heuristics_cleanup_flag = heuristics_cleanup_flag
         )
+        #cv2.imwrite(os.path.dirname(__file__)+"_mp.png", image_mp)
         #r_pixels, coords = clean_points_support(image_cent_list, image_gray.copy(), image_name, 
         #    center, n_mires, jump, start_angle, end_angle, skip_angles=skip_angles, output_folder=self.output) 
 
@@ -505,6 +539,7 @@ class corneal_top_gen:
                     2,
                 )
 
+            
                 cv2.imwrite(
                     self.output+"/" + image_name + "/" + image_name + "_tan_map_overlay.png",
                     tan_map_overlay,
@@ -513,9 +548,10 @@ class corneal_top_gen:
                     self.output+"/" + image_name + "/" + image_name + "_axial_map_overlay.png",
                     axial_map_overlay,
                 )
+            
+        logging.warning("Test Complete!")
+        return errors, sims, [image_gray, image_seg, image_mp, tan_map_overlay, axial_map_overlay]
 
-        print("Test Complete!")
-        return errors
 
 if __name__ == "__main__":
     # parsing arguments
@@ -531,7 +567,7 @@ if __name__ == "__main__":
 
     # create the corneal_top_gen class object
     corneal_top_obj = corneal_top_gen(
-        args.placido_model_dimensions, args.working_distance, sensor_dims, 
+        args.model_file, args.working_distance, sensor_dims, 
         f_len, args.start_angle, args.end_angle, args.jump, 
         args.upsample, args.n_mires, f_inv_20_5,
         )
@@ -540,38 +576,21 @@ if __name__ == "__main__":
     base_dir = args.base_dir  # base directory
     skip_angles = [[-1, -1], [-1, -1]]
     center = (-1, -1)
-    #image_name = "01010_left_1.jpg"
+    # image_name = "nokc_eye_1.jpg"
 
     # call function to run pipeline and generate_topography_maps
     # expects image to be in .jpg format
-    failed_to_detect_center = []
+    
     for filename in os.listdir(base_dir):
-        try:
-            error = corneal_top_obj.generate_topography_maps(
-                base_dir,
-                filename,
-                center=center,
-                downsample=True,
-                blur=True,
-                err1=[args.gap1],
-                err2=[args.gap2],
-                center_selection="auto"
-            )
-        except Exception as e:
-            failed_to_detect_center.append(filename)
-    # Print files for which auto center detection failed
-    print("Auto detection failed for following files")
-    for filename in failed_to_detect_center: print(filename)
-    # Move to manual selection for failed files
-    print("Moving to manual automation...")
-    for filename in failed_to_detect_center:
+        print("Running for file:", filename)
         error = corneal_top_obj.generate_topography_maps(
-                base_dir,
-                filename,
-                center=center,
-                downsample=True,
-                blur=True,
-                err1=[args.gap1],
-                err2=[args.gap2],
-                center_selection="manual"
-            )
+            base_dir,
+            filename,
+            center=center,
+            downsample=True,
+            blur=True,
+            err1=[args.gap1],
+            err2=[args.gap2],
+            center_selection=args.center_selection,
+            heuristics_cleanup_flag = args.heuristics_cleanup_flag,
+        )

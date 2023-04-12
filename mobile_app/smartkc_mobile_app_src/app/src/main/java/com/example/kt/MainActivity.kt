@@ -18,7 +18,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.lifecycle.lifecycleScope
 import androidx.work.*
-import com.balsikandar.crashreporter.CrashReporter
 import com.example.kt.data.repo.FileRepository
 import com.example.kt.utils.PreferenceKeys
 import dagger.hilt.android.AndroidEntryPoint
@@ -216,8 +215,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         if (!dir.exists()) {
             dir.mkdirs()
         }
-        // this is to log crash reports (used external lib)
-        CrashReporter.initialize(this, dir.toString())
     }
 
     override fun onResume() {

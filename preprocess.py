@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# Author: Siddhartha Gairola (t-sigai at microsoft dot com))
-from get_center.get_center import segment_and_get_center
+# Author: Siddhartha Gairola (t-sigai at microsoft dot com)
+import logging
 import numpy as np
 import cv2
 import os
@@ -8,7 +8,16 @@ import os
 # external modules
 from enhance_img.main_enhancement import enhance, detect_circle
 from iris_detection.eval import iris_segmenter
+from get_center.get_center import segment_and_get_center
 # from crf import DenseCRF
+
+def undo_zoom(image, zoom_factor):
+    height, width = image.shape[:2]
+    # 4x zoom
+    image = cv2.resize(image, (width//zoom_factor, height//zoom_factor), interpolation=cv2.INTER_LINEAR)
+    image = cv2.copyMakeBorder(image.copy(),(height-height//zoom_factor)//2,(height-height//zoom_factor)//2,
+        (width-width//zoom_factor)//2,(width-width//zoom_factor)//2,cv2.BORDER_CONSTANT,value=[0,0,0])
+    return image, ((width-width//zoom_factor)//2, (height-height//zoom_factor)//2)
 
 def threshold_image(image):
     #image = cv2.GaussianBlur(image, (5,5), 0)
@@ -22,7 +31,7 @@ def mouse_click(event, x, y, flags, param):
     global centerX, centerY
     if event == cv2.EVENT_LBUTTONDOWN:
         centerX, centerY = x, y
-        print("Center selected:", x, y)
+        logging.info("Center selected: {}, {}".format(x,y))
 
 def auto_canny(image, sigma=0.33):
     # compute the median of the single channel pixel intensities
@@ -68,16 +77,19 @@ def crop_around_center(image, crop_dims=(0,0), center=None):
     return image_crop
 
 def get_iris_diameter(image, image_name, output_folder, crop_dims=(1000, 1000)):
+    
     image_crop = crop_around_center(image, crop_dims=crop_dims)
 
     # iris_segmentation and working_distance computation
     iris_mask = iris_segmenter().segment(image_crop)
     iris_mask[iris_mask == 1] = 255
     iris_mask[iris_mask == 2] = 128
+    '''
     cv2.imwrite(
         output_folder + "/" + image_name + "/" + image_name + "_iris_seg_orig.png",
         iris_mask.astype(np.uint8),
     )
+    '''
     iris_mask[iris_mask == 128] = 0
 
     y, x = np.argwhere(iris_mask == 255)[:, 0], np.argwhere(iris_mask == 255)[:, 1]
@@ -92,6 +104,7 @@ def get_iris_diameter(image, image_name, output_folder, crop_dims=(1000, 1000)):
     cv2.line(image_crop, (x_min, y), (x, y), (0, 0, 255), 2)
     cv2.line(image_crop, (x, y), (x+abs(x-x_min), y), (0, 0, 255), 2)
 
+    '''
     cv2.imwrite(
         output_folder + "/" + image_name + "/" + image_name + "_iris_seg.png",
         iris_mask.astype(np.uint8),
@@ -100,9 +113,10 @@ def get_iris_diameter(image, image_name, output_folder, crop_dims=(1000, 1000)):
         output_folder + "/" + image_name + "/" + image_name + "_out_col_radius.png", 
         image_crop,
     )
+    '''
 
     iris_pix_dia = 2*(x-x_min)
-    print("Pixel radius", iris_pix_dia)
+    logging.info("Pixel radius", iris_pix_dia)
     #working_dist = 12.2 * 4.755 / (((x - x_min) * 2 / 3000) * 4.8)
     #err1 = working_dist - (err2 + cone_length)
     return iris_pix_dia
@@ -120,13 +134,13 @@ def preprocess_image(
     center_selection="manual"
 ):
     script_dir = os.path.dirname(__file__)
-
     # NOTE THIS EXPECTS THE INPUT IMAGE TO HAVE 3000x4000 RESOLUTION
 
     # Step 1: Image Centering and Cropping
     # Assuming image in always in the central region,
     # cropping an area of crop_dims
     image = cv2.imread(base_dir + "/" + image_name)
+    image, offset = undo_zoom(image, 2) # take zoom automatically from response/app
     image_name = image_name.split(".jpg")[0]
 
     # call iris segmentation here
@@ -134,11 +148,17 @@ def preprocess_image(
     iris_pix_dia = -1
 
     # crop image to bring it to a reasonable size (1200 x 1200)
-    image_crop = crop_around_center(image, crop_dims=crop_dims)
-
+    image_crop = None
+    if center[0] != -1 and center[1] != -1:
+        center = (center[0]//2+offset[0], center[1]//2+offset[1]) # divide by zoom
+        image_crop = crop_around_center(image, crop_dims=crop_dims, center=center)
+        center = (image_crop.shape[1]//2, image_crop.shape[0]//2)
+    else:
+        image_crop = crop_around_center(image, crop_dims=crop_dims)
+    
     # Step 3: Locate Image Center
-    if center[0] == -1 and center[0] == -1:
-        
+    if center[0] == -1 and center[1] == -1:
+
         if center_selection=="auto_obsolete":
             # this is for automatically detecting center
             image_gray = cv2.cvtColor(image_crop, cv2.COLOR_BGR2GRAY)
@@ -150,26 +170,13 @@ def preprocess_image(
         elif center_selection=="auto":
             # this is detecting the center using UNet segmentor
             get_center_obj = segment_and_get_center(script_dir+'/get_center/segment_and_get_center_epoch_557_iter_14.pkl')
-            # cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "before_image_temp_isocrop.png", image_crop)
             image_temp_isocrop = crop_around_center(image_crop, crop_dims=(iso_dims, iso_dims))
-            # cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "image_temp_isocrop.png", image_temp_isocrop)
-            mask, ret_list = get_center_obj.segment(image_temp_isocrop)
-            image_bgr, mask_bgr, _ = ret_list
-            cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "image_bgr.png", image_bgr)
-            cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "mask_bgr.png", mask_bgr)
-
-            # print(image_bgr.shape, mask_bgr.shape, "printed images")
+            mask, _ = get_center_obj.segment(image_temp_isocrop)
+            #image_bgr, mask_bgr, _ = ret_list
             center = get_center_obj.get_center(mask)
-            # Find cross
-            # height, width = image_crop.shape[:2]
-            # c_x, c_y = (int(center[0]) + (width - iso_dims)//2, int(center[1]) + (height + iso_dims)//2)
-            # c_x, c_y = int(center[0]), int(center[1])
-            # cv2.line(image_temp_isocrop, (c_x-15, c_y-15), (c_x+15, c_y+15), (0, 0, 255), 5)
-            # cv2.line(image_temp_isocrop, (c_x-15, c_y+15), (c_x+15, c_y-15), (0, 0, 255), 5)
-            # # print(c_x, c_y, "ADJUSTED CENTERS")
-            # cv2.imwrite(output_folder + "/center/" + image_name + "center_cross_image_crop.png", image_crop)
-
             center = int(center[0])+(crop_dims[1]-iso_dims)//2, int(center[1])+(crop_dims[0]-iso_dims)//2
+            #cv2.imwrite("image_bgr.png", image_bgr)
+            #cv2.imwrite("mask_bgr.png", mask_bgr)
             
         elif center_selection=="manual":
             # detect center manually
@@ -187,7 +194,8 @@ def preprocess_image(
     cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_col.png", image_crop)
     # save gray-scale image
     image_gray = cv2.cvtColor(image_crop, cv2.COLOR_BGR2GRAY)
-    cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_gray.png", image_gray)
+    #cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_gray.png", image_gray)
+    #cv2.imwrite("./" + image_name + "_out_gray.png", image_gray)
 
     # Step 2: Image Enhancement, Cleaning & Enhancement
     # Processing input images to get clean thresholded images
@@ -195,19 +203,20 @@ def preprocess_image(
 
     # inverse image
     image_clean_inv = 255 - image_clean
-    cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_clean_inv.png", image_clean_inv)
+    #cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_clean_inv.png", image_clean_inv)
+    #cv2.imwrite("./"+ image_name + "_out_clean_inv.png", image_clean_inv)
 
     # edge computation
     image_edge_orig, image_edge_inv = auto_canny(image_clean), auto_canny(image_clean_inv)
-    cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_edge_inv.png", image_edge_inv)
+    #cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_edge_inv.png", image_edge_inv)
 
     # get masked image
     image_mask = image_clean_inv.copy()
     image_mask[image_mask <= 128] = 0
     image_mask[image_mask > 128] = 1
     image_gray_masked = image_gray * image_mask
-    cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_masked.png", image_gray_masked)
-
+    #cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_masked.png", image_gray_masked)
+    
     # applying crf, function below
     # apply_crf(image_crop, image_mask.astype(np.float32))
 
@@ -221,7 +230,6 @@ def preprocess_image(
     image_edge_inv = image_edge_inv * (1 - filter_mask)
     image_clean_inv = image_clean_inv * (1 - filter_mask)
 
-    cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_edge_inv_filter.png", image_edge_inv)
-    cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_clean_inv_filter.png", image_clean_inv)
-
+    #cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_edge_inv_filter.png", image_edge_inv)
+    #cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_clean_inv_filter.png", image_clean_inv)
     return image_gray, image_clean_inv, image_edge_inv, center, iris_pix_dia

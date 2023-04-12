@@ -100,15 +100,6 @@ class segment_and_get_center:
         return mask, ret_list
     
     def get_center(self, mask):
-        # print(mask)
-        print("############")
-        for i in range(1, 11):
-            y, x = np.argwhere(mask == i)[:,0], np.argwhere(mask == i)[:,1]
-            try:
-                print(np.mean(y), np.mean(x))
-            except:
-                print("CANNOT CALCULATE MEAN FOR", i)
-        print("############")
         y, x = np.argwhere(mask == 1)[:,0], np.argwhere(mask == 1)[:,1]
         y, x = np.mean(y), np.mean(x)
         return x, y

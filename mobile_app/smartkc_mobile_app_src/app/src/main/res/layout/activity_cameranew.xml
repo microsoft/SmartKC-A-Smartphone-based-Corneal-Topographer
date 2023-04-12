@@ -96,14 +96,14 @@
     </LinearLayout>
     -->
 
-    <com.example.kt.RectOverlay
+    <com.example.kt.ui.layout.RectOverlay
         android:id="@+id/rect_overlay"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintDimensionRatio="3:4"
         app:layout_constraintTop_toTopOf="parent" />
-    <com.example.kt.RectOverlay
+    <com.example.kt.ui.layout.RectOverlay
         android:id="@+id/rect_overlay_correct"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -111,7 +111,7 @@
         app:layout_constraintDimensionRatio="3:4"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.example.kt.DrawCrossHair
+    <com.example.kt.ui.layout.CrossHairLayout
         android:id="@+id/cross_hair"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -119,7 +119,7 @@
         app:layout_constraintDimensionRatio="3:4"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.example.kt.DrawCrossHair
+    <com.example.kt.ui.layout.CrossHairLayout
         android:id="@+id/cross_hair_mire"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -127,7 +127,7 @@
         app:layout_constraintDimensionRatio="3:4"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.example.kt.DrawLimbusWidth
+    <com.example.kt.ui.layout.LimbusWidthLayout
         android:id="@+id/limbus_width"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -135,7 +135,7 @@
         app:layout_constraintDimensionRatio="3:4"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.example.kt.DrawCircle
+    <com.example.kt.ui.layout.CircleLayout
         android:id="@+id/circle_overlay"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -157,26 +157,26 @@
         android:elevation="4sp"
         android:src="@drawable/camera" />
 
-    <Button
-        android:id="@+id/lock_button"
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/unlock_cross_switch"
         android:layout_width="96sp"
         android:layout_height="64sp"
         android:layout_marginTop="16sp"
         android:layout_marginRight="16sp"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:text="Lock Cross"
+        android:text="Cross Locked"
         />
 
-    <Button
-        android:id="@+id/lock_capture"
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/unlock_auto_capture_click"
         android:layout_width="128sp"
         android:layout_height="64sp"
         android:layout_marginTop="16sp"
         android:layout_marginRight="16sp"
-        app:layout_constraintRight_toLeftOf="@+id/lock_button"
+        app:layout_constraintRight_toLeftOf="@+id/unlock_cross_switch"
         app:layout_constraintTop_toTopOf="parent"
-        android:text="Lock Auto-Click"
+        android:text="Manual Click"
         />
 
     <ProgressBar
