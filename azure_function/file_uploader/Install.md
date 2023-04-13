@@ -55,3 +55,10 @@ To upload files in the blob storage azure function needs certain permissions. Fo
 
 ### Get URL for Azure function
 To get the URL of Azure function, go to the function app in your azure portal. Under `Funcions` click the Azure function created by you and click on `Get Function Url` present on the top.
+### Use the credentials in the app
+1. Open the android app and click on `UPDATE PREFS`.
+2. Turn on the switch labelled as `Upload Enabled`
+3. Enter Azure function URL on the `Upload URL` field.
+4. Enter Uplaod Secret on the `Upload Secret` field.
+5. Click `Save`
+Now, the app can be used to upload images, simply click on `Upload Files` in the homescreen after clicking the images.
