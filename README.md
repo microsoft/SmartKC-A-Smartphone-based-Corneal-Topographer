@@ -239,6 +239,7 @@ zernike_smoothening(
 ## SmartKC Mobile App
 
 * Please find the source for the SmartKC Android Mobile App that was used as part of the study here: `SmartKC-A-Smartphone-based-Corneal-Topographer/mobile_app/smartkc_mobile_app_src`.
+* The app can be set up with Azure functions to automatically upload the images on the cloud by following these [instructions.](https://github.com/microsoft/SmartKC-A-Smartphone-based-Corneal-Topographer/blob/main/azure_function/file_uploader/Install.md)
 
 ## SmartKC Hardware
 * The STL files for the placido head, diffuser, and placido base are located at: `hardware/placido_head.stl`, `hardware/diffuser.stl`, and `hardware/placido_base.stl` respectively, along with the instructions to 3D print them.
