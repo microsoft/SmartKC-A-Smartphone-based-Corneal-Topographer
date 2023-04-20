@@ -1,24 +1,26 @@
 package com.example.kt.ui
 
+import android.content.DialogInterface
 import com.example.kt.*
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.graphics.PointF
 import android.media.ExifInterface
 import android.net.Uri
-import android.opengl.Visibility
 import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.kt.data.repo.FileRepository
 import com.example.kt.utils.ImageUtils
 import org.apache.commons.io.comparator.LastModifiedFileComparator
-import com.github.chrisbanes.photoview.PhotoView
+import com.jsibbold.zoomage.ZoomageView
 import com.opencsv.CSVWriter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_checkimages.*
@@ -98,6 +100,12 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
         val btnYes = findViewById<View>(R.id.yes_btn) as Button
         btnYes.setOnClickListener(this)
 
+        // mark done button
+        mark_cener_btn.setOnClickListener(this)
+
+        // skip button
+        skip_btn.setOnClickListener(this)
+
         // remove view
         removeView()
         // show image
@@ -109,6 +117,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
 
         //PhotoView imgView = (PhotoView) findViewById(R.id.myimage);
         //imgView.setImageURI(Uri.fromFile(imageFiles[image_index]));
+        myimage.removeCross()
 
         // check if file is empty
         val fileEmpty = imageFiles[image_index].exists() && imageFiles[image_index].length() == 0L
@@ -171,8 +180,16 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
                 }
             }
             R.id.yes_btn -> {
+                questionView.text = "Align the cross to the center. You can zoom and drag image to do so."
+                imagePreviewCv.visibility = View.GONE
+                centerMarkingCv.visibility = View.VISIBLE
+                myimage.setCross()
+            }
+            R.id.mark_cener_btn, R.id.skip_btn -> {
+                val markedCenter = myimage.crossCoors
                 hash_map!![imageFiles[image_index].name] = "Yes"
                 hash_map!![imageFiles[image_index].name + "_offset"] = "" + offset_distance
+                hash_map!![imageFiles[image_index].name + "_marked_center"] = markedCenter.toString()
                 var intent = Intent(this, GetGTDataActivity::class.java)
                 if (left_right == "right") {
                     intent = Intent(this, PromptActivity::class.java)
@@ -187,13 +204,34 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
                     // add extras to intent
                     intent.putExtra("dir_name", dir_name)
                 }
-
-                //finish current activity
-                finish()
-                //start the second Activity
-                this.startActivity(intent)
+                val confirmImage: () -> Unit = {
+                    //finish current activity
+                    finish()
+                    //start the second Activity
+                    this.startActivity(intent)
+                }
+                if (markedCenter == PointF(-1F, -1F)) {
+                    // Show Warning Dialog box
+                    showEmptyCenterWarning(confirmImage)
+                } else {
+                    confirmImage()
+                }
             }
         }
+    }
+
+    private fun showEmptyCenterWarning(onConfirm: () -> Unit) {
+        val alertDialog: AlertDialog = this.let {
+            val builder = AlertDialog.Builder(it)
+            builder.apply {
+                setTitle("Center is not marked. Do you want to proceed?")
+                setPositiveButton("Yes") { _, _ -> onConfirm() }
+                setNegativeButton("Go Back") { _, _ -> }
+            }
+            // Create the AlertDialog
+            builder.create()
+        }
+        alertDialog.show()
     }
 
     private fun pressNo() {
@@ -205,7 +243,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
     private fun removeView() {
 
         // remove photo
-        val imgView = findViewById<View>(R.id.myimage) as PhotoView
+        val imgView = findViewById<View>(R.id.myimage)
         imgView.visibility = View.GONE
         // remove Yes button
         val btnYes = findViewById<View>(R.id.yes_btn) as Button
@@ -229,7 +267,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
     private fun addView() {
 
         // remove photo
-        val imgView = findViewById<View>(R.id.myimage) as PhotoView
+        val imgView = findViewById<ZoomageView>(R.id.myimage)
         imgView.visibility = View.VISIBLE
         // remove Yes button
         val btnYes = findViewById<View>(R.id.yes_btn) as Button
@@ -293,7 +331,8 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
             "Time",
             "Is OK",
             "Offset",
-            "Cutoff"
+            "Cutoff",
+            "Marked Center"
         )
         writer!!.writeNext(data)
         try {
@@ -310,6 +349,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
                     if (hash_map!!.containsKey(files[i].name)) hash_map!![files[i].name] else "NA"
                 val offset =
                     if (hash_map!!.containsKey(files[i].name + "_offset")) hash_map!![files[i].name + "_offset"] else "NA"
+                val marked_center = if (hash_map!!.containsKey(files[i].name + "_marked_center")) hash_map!![files[i].name + "_marked_center"] else "NA"
                 val sdf = SimpleDateFormat("MM/dd/yyyy, hh:mm:ss aa")
                 val date_time =
                     sdf.format(files[i].lastModified()).split(",".toRegex()).toTypedArray()
@@ -323,7 +363,8 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
                     date_time[1],
                     isOk,
                     offset,
-                    centerCutoff.toString()
+                    centerCutoff.toString(),
+                    marked_center
                 )
                 writer.writeNext(curr_data)
             }
@@ -393,33 +434,33 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
             imageUtils.detectMireCenter(2.5, baseminDist / normfactor, start, end, jump)
 
         // draw cross_hair
-        try {
-            Core.line(
-                image, Point(
-                    (crosshair_center[0] - 25).toDouble(), crosshair_center[1].toDouble()
-                ), Point(
-                    (crosshair_center[0] + 25).toDouble(), crosshair_center[1].toDouble()
-                ), Scalar(0.0, 0.0, 255.0), 4
-            )
-            Core.line(
-                image, Point(
-                    crosshair_center[0].toDouble(), (crosshair_center[1] - 25).toDouble()
-                ), Point(
-                    crosshair_center[0].toDouble(), (crosshair_center[1] + 25).toDouble()
-                ), Scalar(0.0, 0.0, 255.0), 4
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        try {
-            Core.circle(
-                image, Point(
-                    mire_center[0].toDouble(), mire_center[1].toDouble()
-                ), 15, Scalar(0.0, 255.0, 0.0), -1, 8, 0
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+//        try {
+//            Core.line(
+//                image, Point(
+//                    (crosshair_center[0] - 25).toDouble(), crosshair_center[1].toDouble()
+//                ), Point(
+//                    (crosshair_center[0] + 25).toDouble(), crosshair_center[1].toDouble()
+//                ), Scalar(0.0, 0.0, 255.0), 4
+//            )
+//            Core.line(
+//                image, Point(
+//                    crosshair_center[0].toDouble(), (crosshair_center[1] - 25).toDouble()
+//                ), Point(
+//                    crosshair_center[0].toDouble(), (crosshair_center[1] + 25).toDouble()
+//                ), Scalar(0.0, 0.0, 255.0), 4
+//            )
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        }
+//        try {
+//            Core.circle(
+//                image, Point(
+//                    mire_center[0].toDouble(), mire_center[1].toDouble()
+//                ), 15, Scalar(0.0, 255.0, 0.0), -1, 8, 0
+//            )
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        }
 
         // distance b/w mireCenter and crossHair
         val dist = Math.sqrt(
@@ -452,7 +493,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
         Utils.matToBitmap(image, bitmapSmall)
         runOnUiThread {
             addView()
-            val imgView = findViewById<View>(R.id.myimage) as PhotoView
+            val imgView = findViewById<View>(R.id.myimage) as ZoomageView
             imgView.setImageBitmap(bitmapSmall)
         }
         var checkFailures = arrayListOf<String>()

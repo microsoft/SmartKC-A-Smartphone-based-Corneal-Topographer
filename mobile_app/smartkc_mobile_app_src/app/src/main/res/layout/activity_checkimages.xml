@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
@@ -26,54 +27,120 @@
         android:textSize="28sp"
         android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/actionModeCv"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/questionView"
-        android:layout_marginLeft="16sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginBottom="10sp"
-        android:text="Image"
-        android:textAlignment="center"
-        android:textSize="18sp" />
+        android:layout_below="@+id/questionView">
 
-    <Button
-        android:id="@+id/no_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/questionView"
-        android:layout_toRightOf="@id/textView"
-        android:layout_marginLeft="10sp"
-        android:layout_marginBottom="10sp"
-        android:text="NO" />
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/imagePreviewCv"
+            android:visibility="visible"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent">
 
-    <Button
-        android:id="@+id/yes_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/questionView"
-        android:layout_toRightOf="@id/no_btn"
-        android:layout_marginLeft="20sp"
-        android:layout_marginBottom="10sp"
-        android:text="YES" />
+            <TextView
+                android:id="@+id/textView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginLeft="16sp"
+                android:layout_marginTop="10sp"
+                android:layout_marginBottom="10sp"
+                android:text="Image"
+                android:textAlignment="center"
+                android:textSize="18sp" />
 
-    <TextView
-        android:id="@+id/pinchView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/no_btn"
-        android:layout_marginTop="8sp"
-        android:text="Pinch to Zoom"
-        android:layout_centerHorizontal="true"
-        android:textColor="#000000"
-        android:textSize="18sp" />
+            <Button
+                android:id="@+id/no_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintLeft_toRightOf="@id/textView"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginLeft="10sp"
+                android:layout_marginBottom="10sp"
+                android:text="NO" />
 
-    <com.github.chrisbanes.photoview.PhotoView
+            <Button
+                android:id="@+id/yes_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintLeft_toRightOf="@id/no_btn"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginLeft="20sp"
+                android:layout_marginBottom="10sp"
+                android:text="YES" />
+
+            <TextView
+                android:id="@+id/pinchView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toBottomOf="@id/no_btn"
+                android:layout_marginTop="8sp"
+                android:text="Pinch to Zoom"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                android:textColor="#000000"
+                android:textSize="18sp" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/centerMarkingCv"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <Button
+                android:id="@+id/mark_cener_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toLeftOf="@id/skip_btn"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginLeft="10sp"
+                android:layout_marginBottom="10sp"
+                android:text="Done" />
+
+            <Button
+                android:id="@+id/skip_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintLeft_toRightOf="@id/mark_cener_btn"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginLeft="20sp"
+                android:layout_marginBottom="10sp"
+                android:text="SKIP" />
+
+            <TextView
+                android:id="@+id/mark_center_instruction_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toBottomOf="@id/skip_btn"
+                android:layout_marginTop="8sp"
+                android:text="Press DONE when you have aligned the cross"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                android:textColor="#000000"
+                android:textSize="18sp" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.jsibbold.zoomage.ZoomageView
         android:id="@+id/myimage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/pinchView"
+        android:layout_below="@id/actionModeCv"
+        app:zoomage_autoResetMode="UNDER"
+        app:zoomage_minScale="1"
+        app:zoomage_restrictBounds="true"
+        app:zoomage_animateOnReset="false"
         android:layout_marginBottom="96sp"
         android:layout_marginEnd="-6dp" />
 
