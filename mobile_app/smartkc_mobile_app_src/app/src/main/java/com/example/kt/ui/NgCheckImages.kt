@@ -61,6 +61,8 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
     var left_right: String? = null
     var hash_map: HashMap<String, String>? = null
     var centerCutoff = 1.0f
+    var cameraPhysicalSize: String? = null
+    var focalLength: Float? = null
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_checkimages)
@@ -71,6 +73,8 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
         left_right = bundle.getString("left_right")
         hash_map = intent.getSerializableExtra("hash_map") as HashMap<String, String>?
         origMaxCounts = bundle.getString("number_of_images")!!.toInt()
+        cameraPhysicalSize = bundle.getString("camera_physical_size")
+        focalLength = bundle.getFloat("focal_length")
         image_index = 0 // initialize image index as 0
 
         // get app preferences
@@ -332,7 +336,9 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
             "Is OK",
             "Offset",
             "Cutoff",
-            "Marked Center"
+            "Marked Center",
+            "camera_physical_size",
+            "focal_length"
         )
         writer!!.writeNext(data)
         try {
@@ -364,7 +370,9 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
                     isOk,
                     offset,
                     centerCutoff.toString(),
-                    marked_center
+                    marked_center,
+                    cameraPhysicalSize ?: "NA",
+                    focalLength?.toString() ?: "NA"
                 )
                 writer.writeNext(curr_data)
             }

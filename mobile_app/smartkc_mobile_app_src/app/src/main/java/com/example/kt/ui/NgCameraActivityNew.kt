@@ -6,11 +6,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.media.MediaActionSound
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
+import android.util.SizeF
 import android.view.MotionEvent
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -41,7 +44,6 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.inject.Inject
-import kotlin.collections.LinkedHashSet
 import kotlin.math.sqrt
 
 @ExperimentalCamera2Interop @ExperimentalCameraFilter @AndroidEntryPoint
@@ -211,6 +213,17 @@ class NgCameraActivityNew : AppCompatActivity() {
                     currentCounts += 1
                     //Log.e(TAG, "Current counts: " + currentCounts + " maxCounts " + maxCounts)
                     if (currentCounts >= maxCounts) {
+                        var cameraPhysicalSize: SizeF? = null
+                        var focalSize: FloatArray? = null
+                        runBlocking {
+                            val data = dataStore.data.first()
+                            val selectedCameraKey =
+                                stringPreferencesKey(PreferenceKeys.CHOSEN_CAMERA)
+                            val selectedCamera = data[selectedCameraKey] ?: "0"
+                            val manager = getSystemService(CAMERA_SERVICE) as CameraManager
+                            cameraPhysicalSize = manager.getCameraCharacteristics(selectedCamera).get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
+                            focalSize = manager.getCameraCharacteristics(selectedCamera).get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
+                        }
                         //cameraProvider.unbindAll()
                         val intent = Intent(this@NgCameraActivityNew, NgCheckImages::class.java)
                         // add extras to intent
@@ -218,6 +231,8 @@ class NgCameraActivityNew : AppCompatActivity() {
                         intent.putExtra("left_right", left_right)
                         intent.putExtra("number_of_images", "" + maxCounts)
                         intent.putExtra("hash_map", hash_map)
+                        intent.putExtra("camera_physical_size", cameraPhysicalSize.toString())
+                        intent.putExtra("focal_length", focalSize?.get(0))
                         //finish current activity
                         finish()
                         //start the second Activity
