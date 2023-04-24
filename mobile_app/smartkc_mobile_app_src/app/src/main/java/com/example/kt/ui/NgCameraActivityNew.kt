@@ -61,6 +61,7 @@ class NgCameraActivityNew : AppCompatActivity() {
     var base_dir: String? = null
     var dir_name: String? = null
     var left_right: String? = null
+    var center_name: String? = null
     var hash_map : HashMap<*, *>? = null
     var currentCounts = 0 // initialize current counts as 0
     var maxCounts=-1; // initialized in onCreate()
@@ -138,6 +139,12 @@ class NgCameraActivityNew : AppCompatActivity() {
         val dir = File(getExternalFilesDir(null), MainActivity.PACKAGE_NAME + "/" + dir_name)
         if(dir.listFiles { dir, name -> name.toLowerCase().startsWith(left_right!!) } != null)
             idx = dir.listFiles { dir, name -> name.toLowerCase().startsWith(left_right!!) }.size
+        // Get center name
+        center_name = sharedPrefs.getString("CENTER_NAME", "")
+        if (center_name.isNullOrEmpty()) {
+              throw Error("Center name cannot be null")
+        }
+
 
         outputDirectory = getOutputDirectory()
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -174,9 +181,8 @@ class NgCameraActivityNew : AppCompatActivity() {
         val imageCapture = imageCapture ?: return
 
         // Create indexed output file to hold the image
-        val photoFile = File(
-            outputDirectory,
-            left_right + "_" + (idx + currentCounts) + ".jpg")
+        val fileName = center_name + "_" + dir_name + "_" +  left_right + "_" + (idx + currentCounts) + ".jpg"
+        val photoFile = File(outputDirectory, fileName)
 
         // Create output options object which contains file + metadata
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
@@ -194,15 +200,8 @@ class NgCameraActivityNew : AppCompatActivity() {
                     Log.d(TAG, msg)
                     // Record it in database
                     runBlocking {
-                        val sharedPrefs = getSharedPreferences("KT_APP_PREFERENCES", MODE_PRIVATE)
-                        val center_name = sharedPrefs.getString("CENTER_NAME", "")
-                        if (center_name.isNullOrEmpty()) {
-                            throw Error("Center name cannot be null")
-                        }
-                        val fileNameParts = savedUri.toString().split("_")
-                        val idx = fileNameParts[fileNameParts.size-1]
-                        val fileName = "${center_name}/${dir_name?.split("_")?.get(0)}/${left_right}/${System.currentTimeMillis()}_${idx}"
-                        fileRepository.insertNewFileRecord(savedUri.toString(), fileName)
+                        val blobFileName = "${center_name}/${dir_name?.split("_")?.get(0)}/${left_right}/${fileName}"
+                        fileRepository.insertNewFileRecord(savedUri.toString(), blobFileName)
                     }
                     Toast.makeText(baseContext, "Counts:" + (currentCounts + 1) + "/" + maxCounts, Toast.LENGTH_SHORT).show()
                     // play capture sound

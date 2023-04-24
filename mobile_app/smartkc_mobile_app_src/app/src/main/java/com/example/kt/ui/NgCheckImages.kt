@@ -17,6 +17,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.ImageCapture
 import com.example.kt.data.repo.FileRepository
 import com.example.kt.utils.ImageUtils
 import org.apache.commons.io.comparator.LastModifiedFileComparator
@@ -63,6 +64,7 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
     var centerCutoff = 1.0f
     var cameraPhysicalSize: String? = null
     var focalLength: Float? = null
+    var center_name: String? = null
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_checkimages)
@@ -81,14 +83,21 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
         val sharedPrefs = getSharedPreferences("KT_APP_PREFERENCES", MODE_PRIVATE)
         centerCutoff = sharedPrefs.getFloat("CENTER_CUTOFF", 0.5f)
 
+        // Get center name
+        center_name = sharedPrefs.getString("CENTER_NAME", "")
+        if (center_name.isNullOrEmpty()) {
+            throw Error("Center name cannot be null")
+        }
+
         // list images in the directory
         val dir = File(
             getExternalFilesDir(null),
             MainActivity.PACKAGE_NAME + "/" + dir_name
         )
+        val prefix = center_name + "_" + dir_name + "_" + left_right!!
         imageFiles = dir.listFiles { dir, name ->
-            name.lowercase(Locale.getDefault()).startsWith(
-                left_right!!
+            name.startsWith(
+                prefix
             )
         }
         Arrays.sort(imageFiles, LastModifiedFileComparator.LASTMODIFIED_REVERSE)
@@ -300,8 +309,9 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
         val files = dir.listFiles()
         Arrays.sort(files, LastModifiedFileComparator.LASTMODIFIED_REVERSE)
         Log.e("Finish", "Inside Write Metadata Size: " + files.size)
+        val fileName = center_name + "_" + dir_name + ".csv"
         val filePath = getExternalFilesDir(null)!!.absolutePath + File.separator +
-                MainActivity.PACKAGE_NAME + File.separator + dir_name + File.separator + dir_name + ".csv"
+                MainActivity.PACKAGE_NAME + File.separator + dir_name + File.separator + fileName
         Log.e("Finish", "Inside Write Metadata filePath $filePath")
         val f = File(filePath)
         var writer: CSVWriter? = null
@@ -377,13 +387,8 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
                 writer.writeNext(curr_data)
             }
             writer.close()
-            val sharedPrefs = getSharedPreferences("KT_APP_PREFERENCES", MODE_PRIVATE)
-            val center_name = sharedPrefs.getString("CENTER_NAME", "")
-            if (center_name.isNullOrEmpty()) {
-                throw Error("Center name cannot be null")
-            }
-            val fileName = "${center_name}/${dir_name?.split("_")?.get(0)}/meta_data.csv"
-            runBlocking { fileRepository.insertNewFileRecord(Uri.fromFile(f).toString(), fileName) }
+            val blobFileName = "${center_name}/${dir_name?.split("_")?.get(0)}/${fileName}"
+            runBlocking { fileRepository.insertNewFileRecord(Uri.fromFile(f).toString(), blobFileName) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
