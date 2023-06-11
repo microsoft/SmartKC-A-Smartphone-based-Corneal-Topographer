@@ -102,9 +102,13 @@ parser.add_argument(
 )
 parser.add_argument(
     "--heuristics_cleanup_flag",
-    default=True,
-    type=bool,
+    action='store_true',
     help="Flag to run heuristics based cleanup of mire points",
+)
+parser.add_argument(
+    "--heuristics_bump_cleanup_flag",
+    action='store_true',
+    help="Flag to run heuristics based bump cleanup of mire points",
 )
 
 class corneal_top_gen:
@@ -391,7 +395,8 @@ class corneal_top_gen:
         center=(-1, -1), downsample=False, blur=True, upsample=None,
         err1=[0], err2=[0], skip_angles=[[-1, -1], [-1, -1]],
         center_selection="auto",
-        heuristics_cleanup_flag = True
+        heuristics_cleanup_flag = True,
+        heuristics_bump_cleanup_flag = True
     ):
 
         self.output = self.test_name
@@ -457,7 +462,8 @@ class corneal_top_gen:
         r_pixels, coords, image_mp = clean_points(
             image_cent_list, image_gray.copy(), image_name, center, self.n_mires, self.jump, self.start_angle, self.end_angle, 
             output_folder=self.output, 
-            heuristics_cleanup_flag = heuristics_cleanup_flag
+            heuristics_cleanup_flag = heuristics_cleanup_flag,
+            heuristics_bump_cleanup_flag = heuristics_bump_cleanup_flag
         )
         #cv2.imwrite(os.path.dirname(__file__)+"_mp.png", image_mp)
         #r_pixels, coords = clean_points_support(image_cent_list, image_gray.copy(), image_name, 
@@ -593,4 +599,5 @@ if __name__ == "__main__":
             err2=[args.gap2],
             center_selection=args.center_selection,
             heuristics_cleanup_flag = args.heuristics_cleanup_flag,
+            heuristics_bump_cleanup_flag = args.heuristics_bump_cleanup_flag
         )

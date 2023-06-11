@@ -145,7 +145,8 @@ def process(image_seg, image_orig, center,
 
 def clean_points(image_cent_list, image_gray, image_name, center, 
     n_mires=20, jump=2, start_angle=0, end_angle=360, output_folder="out",
-    heuristics_cleanup_flag=True):
+    heuristics_cleanup_flag=True,
+    heuristics_bump_cleanup_flag = True):
     
     logging.info("Cleaning ...")
     image_gray = np.dstack((image_gray, np.dstack((image_gray, image_gray))))
@@ -179,9 +180,12 @@ def clean_points(image_cent_list, image_gray, image_name, center,
     plt.savefig(output_folder+'/'+image_name+'/plots.png')
     plt.close()
     
+    if (heuristics_bump_cleanup_flag):
+        r_pixels = bump_cleanup_heuristics(r_pixels, output_folder, image_name)
+    
     if (heuristics_cleanup_flag): 
         r_pixels = cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name)
-
+    
     # uncomment for real image, skip first mire
     r_pixels = r_pixels[1:]
 
@@ -342,3 +346,162 @@ def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, ou
     plt.close()
     
     return r_pixels
+
+
+# Nipun's code
+
+def bump_cleanup_heuristics(r_pixels, output_folder, image_name, threshold=2):
+    smoothed_seqs = []
+    for i, v in enumerate(r_pixels):
+    #   plot_filename = f"plots_bump/plot_{i}"
+    #   print(f"plot_bump_filename: {plot_filename}")
+      smoothed_v = detect_and_replace_bumps(i, v, threshold, r_pixels)
+      smoothed_seqs.append(smoothed_v)
+    plot_array_list(smoothed_seqs, [f"{i}" for i in range(len(smoothed_seqs))], output_folder+'/'+ image_name +"/" + 'bump_smoothened.png')
+    return smoothed_seqs
+
+def detect_bumps(array, threshold=2):
+  # compute the derivative of the array
+  derivative = np.gradient(array)
+  # define constants for the point types
+  HIGH_POSITIVE = "high positive"
+  HIGH_NEGATIVE = "high negative"
+  SOFT = "soft"
+  # initialize an empty list to store the bump regions
+  bump_regions = []
+  # initialize a variable to store the start index of the current bump region
+  start_index = None
+  # initialize a variable to store the type of the current bump region (positive or negative)
+  bump_type = None
+  # loop through the derivative array
+#   print(array.shape, "INSIDE detect_bumps: array SHAPE")
+  for i in range(len(derivative)):
+    # get the current value
+    value = derivative[i]
+    # check if it is a high positive derivative point
+    if value > threshold:
+      # mark it as such
+      point_type = HIGH_POSITIVE
+    # check if it is a high negative derivative point
+    elif value < -threshold:
+      # mark it as such
+      point_type = HIGH_NEGATIVE
+    # otherwise, it is a soft-derivative point
+    else:
+      # mark it as such
+      point_type = SOFT
+    # check if we are at the first element
+    if i == 0:
+      # store the current point type as the previous one
+      prev_point_type = point_type
+    # otherwise, compare with the previous point type
+    else:
+      # if a soft point is followed by a high positive derivative point
+      if prev_point_type == SOFT and point_type == HIGH_POSITIVE and start_index is None:
+        # set the start index to the current index
+        start_index = i
+        # set the bump type to positive
+        bump_type = "positive"
+      # if a soft point is followed by a high negative derivative point
+      elif prev_point_type == SOFT and point_type == HIGH_NEGATIVE and start_index is None:
+        # set the start index to the current index
+        start_index = i
+        # set the bump type to negative
+        bump_type = "negative"
+      # if a high negative derivative point is followed by a soft point and start index is not None and bump type is positive
+      elif prev_point_type == HIGH_NEGATIVE and point_type == SOFT and start_index is not None and bump_type == "positive":
+        # append a pair of start and end indices and bump type to the list 
+        bump_regions.append((start_index, i, bump_type))
+        # reset the start index to None and bump type to None
+        start_index = None
+        bump_type = None
+      # if a high positive derivative point is followed by a soft point and start index is not None and bump type is negative 
+      elif prev_point_type == HIGH_POSITIVE and point_type == SOFT and start_index is not None and bump_type == "negative":
+        # append a pair of start and end indices and bump type to the list 
+        bump_regions.append((start_index, i, bump_type))
+        # reset the start index to None and bump type to None
+        start_index = None
+        bump_type = None      
+      # update the previous point type with the current one
+      prev_point_type = point_type
+
+  # check if there is a pending bump region after the loop and start index is not None and bump type is not None 
+  if start_index is not None and bump_type is not None:
+    # append a pair of start and end indices and bump type to the list 
+    bump_regions.append((start_index, len(derivative) - 1, bump_type))
+
+  return bump_regions, derivative
+
+
+def replace_bump_data_with_mean_of_rest(idx, data_seq, bump_regions, r_pixels):
+  # Compute indices of data_seq points inside the bump regions
+  bump_indices = []
+  for bump in bump_regions:
+      bump_indices.extend(range(bump[0], bump[1] + 1))
+  
+  # Compute indices of data_seq points outside the bump regions
+  outside_bump_indices = [i for i in range(len(data_seq)) if i not in bump_indices]
+  
+  # Compute mean of data_seq points outside the bump regions
+#   temp = [data_seq]
+  mean = np.mean([data_seq[i] for i in outside_bump_indices])
+#   mean = np.mean(data_seq[outside_bump_indices])
+
+  # Replace data_seq points inside the bump regions with the mean
+#   outside_bump_indices.sort()
+  if(idx > 0):
+    diff = []
+    for i in outside_bump_indices:
+        val = r_pixels[idx-1][i] - r_pixels[idx-2][i]
+        if val < 0: val = r_pixels[0][i]
+        diff.append(val)
+    median = np.median(val)
+    print(median, "median")
+    for i in bump_indices:
+      for bump in bump_regions:
+        if bump[0] <=i <= bump[1]:
+          if bump[1]+1 < len(data_seq):
+            mean = (data_seq[bump[0]-1] + data_seq[bump[1]+1])/2
+          else:
+            mean = data_seq[bump[0]-1]
+            break
+            # median = np.median([max(0, r_pixels[idx][j] - r_pixels[idx-1][j]) for j in range(0, i)])
+            # mean = np.mean([r_pixels[idx][j] for j in range(i-50, min(i+50, len(data_seq)))])
+            # data_seq[i] = mean
+      data_seq[i] = mean
+#   data_seq[bump_indices] = mean
+  return data_seq
+
+def plot_two_arrays(array1, array2, legend1, legend2, output_file):
+  plt.plot(array1, label=legend1)
+  plt.plot(array2, label=legend2)
+  plt.legend()
+  plt.savefig(output_file)
+  plt.close()
+  #plt.show()
+
+def plot_array(array1, legend1, output_file):
+  print("plotting array")
+  plt.plot(array1, label=legend1)
+  plt.legend()
+  plt.savefig(output_file)
+  plt.close()
+  #plt.show()
+  
+def detect_and_replace_bumps(i, data_seq, threshold, r_pixels):
+  bump_regions, derivative = detect_bumps(data_seq, threshold)
+  print(f"bump_regions: {bump_regions}")
+
+  data_seq_orig = data_seq.copy()
+  data_seq = replace_bump_data_with_mean_of_rest(i, data_seq, bump_regions, r_pixels)
+#   plot_two_arrays(data_seq_orig, data_seq, "original", "smoothed", f"{plot_filename_prefix}_smoothed.png")
+#   plot_array(derivative[2:], "derivative", f"{plot_filename_prefix}_derivative.png")
+  return data_seq
+
+def plot_array_list(array_list, legend_list, output_file):
+  for i in range(len(array_list)):
+    plt.plot(array_list[i], label=legend_list[i])
+  plt.legend()
+  plt.savefig(output_file)
+  plt.close()
+  #plt.show()
