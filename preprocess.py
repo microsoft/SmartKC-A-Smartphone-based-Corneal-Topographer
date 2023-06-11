@@ -62,23 +62,27 @@ def apply_crf(image, image_seg):
     # image = image.astype(np.uint8).transpose(1, 2, 0)
 
 
-def crop_around_center(image, crop_dims=(0,0), center=None):
+def crop_around_center(image, crop_dims=(0,0), center=None, marked_center = None):
     if center is None:
         height, width = image.shape[:2]
         c_y_min, c_x_min = height // 2 - crop_dims[1] // 2, width // 2 - crop_dims[1] // 2
         c_y_max, c_x_max = height // 2 + crop_dims[1] // 2, width // 2 + crop_dims[0] // 2
         image_crop = image[c_y_min:c_y_max, c_x_min:c_x_max]
+        # Adjust marked center because the image was cropped
+        if (marked_center != None): marked_center = [marked_center[0]-c_x_min, marked_center[1]-c_y_min]
     else:
         centerX, centerY = center
         c_y_min, c_x_min = centerY - crop_dims[1] // 2, centerX - crop_dims[1] // 2
         c_y_max, c_x_max = centerY + crop_dims[1] // 2, centerX + crop_dims[1] // 2
         image_crop = image[c_y_min:c_y_max, c_x_min:c_x_max]
+        # Adjust marked center because the image was cropped
+        if (marked_center != None): marked_center = [marked_center[0]-c_x_min, marked_center[1]-c_y_min]
 
-    return image_crop
+    return image_crop, marked_center
 
 def get_iris_diameter(image, image_name, output_folder, crop_dims=(1000, 1000)):
     
-    image_crop = crop_around_center(image, crop_dims=crop_dims)
+    image_crop, _ = crop_around_center(image, crop_dims=crop_dims)
 
     # iris_segmentation and working_distance computation
     iris_mask = iris_segmenter().segment(image_crop)
@@ -131,8 +135,10 @@ def preprocess_image(
     iso_dims=500,
     output_folder="out",
     filter_radius=10,
-    center_selection="manual"
+    center_selection="manual",
+    marked_center = None
 ):
+    print(marked_center, "CENTER_SELECTION")
     script_dir = os.path.dirname(__file__)
     # NOTE THIS EXPECTS THE INPUT IMAGE TO HAVE 3000x4000 RESOLUTION
 
@@ -140,8 +146,14 @@ def preprocess_image(
     # Assuming image in always in the central region,
     # cropping an area of crop_dims
     image = cv2.imread(base_dir + "/" + image_name)
+    height = image.shape[0]
+    width = image.shape[1]
     image, offset = undo_zoom(image, 2) # take zoom automatically from response/app
     image_name = image_name.split(".jpg")[0]
+    
+    # Translate marked center to pixels
+    if(marked_center):
+        marked_center = [int(marked_center[0]*width)//2 + offset[0], int(marked_center[1]*height)//2 + offset[1]]
 
     # call iris segmentation here
     #iris_pix_dia = get_iris_diameter(image.copy(), image_name, output_folder)
@@ -149,12 +161,13 @@ def preprocess_image(
 
     # crop image to bring it to a reasonable size (1200 x 1200)
     image_crop = None
+    marked_center_crop = None
     if center[0] != -1 and center[1] != -1:
         center = (center[0]//2+offset[0], center[1]//2+offset[1]) # divide by zoom
-        image_crop = crop_around_center(image, crop_dims=crop_dims, center=center)
+        image_crop, marked_center_crop = crop_around_center(image, crop_dims=crop_dims, center=center, marked_center = marked_center)
         center = (image_crop.shape[1]//2, image_crop.shape[0]//2)
     else:
-        image_crop = crop_around_center(image, crop_dims=crop_dims)
+        image_crop, marked_center_crop = crop_around_center(image, crop_dims=crop_dims, marked_center = marked_center)
     
     # Step 3: Locate Image Center
     if center[0] == -1 and center[1] == -1:
@@ -170,7 +183,7 @@ def preprocess_image(
         elif center_selection=="auto":
             # this is detecting the center using UNet segmentor
             get_center_obj = segment_and_get_center(script_dir+'/get_center/segment_and_get_center_epoch_557_iter_14.pkl')
-            image_temp_isocrop = crop_around_center(image_crop, crop_dims=(iso_dims, iso_dims))
+            image_temp_isocrop, _ = crop_around_center(image_crop, crop_dims=(iso_dims, iso_dims))
             mask, _ = get_center_obj.segment(image_temp_isocrop)
             #image_bgr, mask_bgr, _ = ret_list
             center = get_center_obj.get_center(mask)
@@ -178,7 +191,7 @@ def preprocess_image(
             #cv2.imwrite("image_bgr.png", image_bgr)
             #cv2.imwrite("mask_bgr.png", mask_bgr)
             
-        elif center_selection=="manual":
+        elif center_selection=="manual-pc":
             # detect center manually
             cv2.imshow('image', image_crop)
             cv2.setMouseCallback('image', mouse_click)
@@ -186,9 +199,22 @@ def preprocess_image(
             cv2.destroyAllWindows()
             global centerX, centerY
             center = [centerX, centerY]
+        elif center_selection == "manual-android":
+            # draw marked center
+            x = marked_center_crop[0]
+            y = marked_center_crop[1]
+            # debug: show marked center on image
+            # temp = image_crop.copy()
+            # cv2.line(temp, (x-10, y-10), (x+10, y+10), (255, 0, 0), 3)
+            # cv2.line(temp, (x+10, y-10), (x-10, y+10), (255, 0, 0), 3)
+            # cv2.imshow('image_after_temp', temp)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
+            center = [x, y]
+            
 
     # isolate crop to only capture the central corneal region
-    image_crop = crop_around_center(image_crop, crop_dims=(iso_dims, iso_dims), center=center)
+    image_crop, _ = crop_around_center(image_crop, crop_dims=(iso_dims, iso_dims), center=center)
 
     # save original image
     cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_col.png", image_crop)
