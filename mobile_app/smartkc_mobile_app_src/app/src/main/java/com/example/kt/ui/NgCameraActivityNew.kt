@@ -6,11 +6,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.media.MediaActionSound
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
+import android.util.SizeF
 import android.view.MotionEvent
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -41,7 +44,6 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.inject.Inject
-import kotlin.collections.LinkedHashSet
 import kotlin.math.sqrt
 
 @ExperimentalCamera2Interop @ExperimentalCameraFilter @AndroidEntryPoint
@@ -59,6 +61,7 @@ class NgCameraActivityNew : AppCompatActivity() {
     var base_dir: String? = null
     var dir_name: String? = null
     var left_right: String? = null
+    var center_name: String? = null
     var hash_map : HashMap<*, *>? = null
     var currentCounts = 0 // initialize current counts as 0
     var maxCounts=-1; // initialized in onCreate()
@@ -136,6 +139,12 @@ class NgCameraActivityNew : AppCompatActivity() {
         val dir = File(getExternalFilesDir(null), MainActivity.PACKAGE_NAME + "/" + dir_name)
         if(dir.listFiles { dir, name -> name.toLowerCase().startsWith(left_right!!) } != null)
             idx = dir.listFiles { dir, name -> name.toLowerCase().startsWith(left_right!!) }.size
+        // Get center name
+        center_name = sharedPrefs.getString("CENTER_NAME", "")
+        if (center_name.isNullOrEmpty()) {
+              throw Error("Center name cannot be null")
+        }
+
 
         outputDirectory = getOutputDirectory()
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -172,9 +181,8 @@ class NgCameraActivityNew : AppCompatActivity() {
         val imageCapture = imageCapture ?: return
 
         // Create indexed output file to hold the image
-        val photoFile = File(
-            outputDirectory,
-            left_right + "_" + (idx + currentCounts) + ".jpg")
+        val fileName = center_name + "_" + dir_name + "_" +  left_right + "_" + (idx + currentCounts) + ".jpg"
+        val photoFile = File(outputDirectory, fileName)
 
         // Create output options object which contains file + metadata
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
@@ -192,15 +200,8 @@ class NgCameraActivityNew : AppCompatActivity() {
                     Log.d(TAG, msg)
                     // Record it in database
                     runBlocking {
-                        val sharedPrefs = getSharedPreferences("KT_APP_PREFERENCES", MODE_PRIVATE)
-                        val center_name = sharedPrefs.getString("CENTER_NAME", "")
-                        if (center_name.isNullOrEmpty()) {
-                            throw Error("Center name cannot be null")
-                        }
-                        val fileNameParts = savedUri.toString().split("_")
-                        val idx = fileNameParts[fileNameParts.size-1]
-                        val fileName = "${center_name}/${dir_name?.split("_")?.get(0)}/${left_right}/${System.currentTimeMillis()}_${idx}"
-                        fileRepository.insertNewFileRecord(savedUri.toString(), fileName)
+                        val blobFileName = "${center_name}/${dir_name?.split("_")?.get(0)}/${left_right}/${fileName}"
+                        fileRepository.insertNewFileRecord(savedUri.toString(), blobFileName)
                     }
                     Toast.makeText(baseContext, "Counts:" + (currentCounts + 1) + "/" + maxCounts, Toast.LENGTH_SHORT).show()
                     // play capture sound
@@ -211,6 +212,17 @@ class NgCameraActivityNew : AppCompatActivity() {
                     currentCounts += 1
                     //Log.e(TAG, "Current counts: " + currentCounts + " maxCounts " + maxCounts)
                     if (currentCounts >= maxCounts) {
+                        var cameraPhysicalSize: SizeF? = null
+                        var focalSize: FloatArray? = null
+                        runBlocking {
+                            val data = dataStore.data.first()
+                            val selectedCameraKey =
+                                stringPreferencesKey(PreferenceKeys.CHOSEN_CAMERA)
+                            val selectedCamera = data[selectedCameraKey] ?: "0"
+                            val manager = getSystemService(CAMERA_SERVICE) as CameraManager
+                            cameraPhysicalSize = manager.getCameraCharacteristics(selectedCamera).get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
+                            focalSize = manager.getCameraCharacteristics(selectedCamera).get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)
+                        }
                         //cameraProvider.unbindAll()
                         val intent = Intent(this@NgCameraActivityNew, NgCheckImages::class.java)
                         // add extras to intent
@@ -218,6 +230,8 @@ class NgCameraActivityNew : AppCompatActivity() {
                         intent.putExtra("left_right", left_right)
                         intent.putExtra("number_of_images", "" + maxCounts)
                         intent.putExtra("hash_map", hash_map)
+                        intent.putExtra("camera_physical_size", cameraPhysicalSize.toString())
+                        intent.putExtra("focal_length", focalSize?.get(0))
                         //finish current activity
                         finish()
                         //start the second Activity

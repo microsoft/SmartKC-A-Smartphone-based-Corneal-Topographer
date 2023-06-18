@@ -150,4 +150,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-crashlytics-ktx'
     implementation 'com.google.firebase:firebase-analytics-ktx'
 
+    // Zoomage Library
+    implementation(project(":zoomage"))
+
 }
