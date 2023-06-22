@@ -1,3 +1,5 @@
+from hardware.hardware_constants import HardwareConstants
+
 def get_slope(obj_dim_pix, img_dims, dist, sensor_dims=(6.4, 4.8), f_len=4.76):
     obj_dim_img = (
         obj_dim_pix[0] * sensor_dims[0] / img_dims[0],
@@ -28,7 +30,7 @@ def get_arc_step_params(
             model.append(
                 (   
                     # uncomment and use below in-case of oldest placido head
-                    (model_temp[idx][0] + model_temp[idx + 1][0] - 2 + 0.5) / 2.0, 
+                    (model_temp[idx][0] + model_temp[idx + 1][0] - HardwareConstants.placido_thickness_mm + HardwareConstants.thickness_adjustment_mm) / 2.0, 
                     #(model_temp[idx][0] + model_temp[idx + 1][0]) / 2.0,
                     (model_temp[idx][1] + model_temp[idx + 1][1]) / 2.0,
                 )
