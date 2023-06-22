@@ -110,11 +110,18 @@ parser.add_argument(
     action='store_true',
     help="Flag to run heuristics based bump cleanup of mire points",
 )
+parser.add_argument(
+    "--output_dir",
+    default=None,
+    type=str,
+    help="Output directory name. If not provided, the current date is used for the directory name.",
+)
+
 
 class corneal_top_gen:
 
     def __init__(
-        self, model_file, working_distance, sensor_dims, f_len, start_angle, end_angle, jump, upsample, n_mires, f_gap1, zernike_degree=[8], test_name=None
+        self, model_file, working_distance, sensor_dims, f_len, start_angle, end_angle, jump, upsample, n_mires, f_gap1, test_name, zernike_degree=[8]
         ):
         self.model_file = model_file # file which consists of the placido head dimensions
         self.working_distance = working_distance # distance between camera pupil and cornea apex
@@ -127,8 +134,7 @@ class corneal_top_gen:
         self.ups = upsample # if the image has to be upsampled or not
         self.n_mires = n_mires # number of mires to process
         self.zernike_degree = zernike_degree # degree of the zernike polynomial used for fitting
-        if test_name == None:
-            self.test_name = date.today().strftime("%d_%m_%Y")
+        self.test_name = test_name
     
     # to handle different phones with different intrinsic camera params
     # TODO: Replace f_gap1_wrapper with f_gap1 in the code below
@@ -595,6 +601,13 @@ if __name__ == "__main__":
     elif (center_selection == 'manual-android'): execution_order = ['manual-android', 'auto', 'manual-pc']
     elif (center_selection == 'auto'): execution_order = ['auto', 'manual-pc']
     elif (center_selection == 'manual-pc'): execution_order = ['manual-pc']
+
+    # set the output directory
+    if args.output_dir is None:
+        output_dir = date.today().strftime("%d_%m_%Y")
+    else:
+        output_dir = args.output_dir
+    print("Output directory: ", output_dir)
     
     for selection_mode in execution_order:
         while len(to_process):
@@ -629,8 +642,9 @@ if __name__ == "__main__":
                     args.model_file, args.working_distance, sensor_dims, 
                     f_len, args.start_angle, args.end_angle, args.jump, 
                     args.upsample, args.n_mires, f_inv_20_5,
-                    )
-                
+                    output_dir,
+                )
+
                 corneal_top_obj.generate_topography_maps(
                 base_dir,
                 filename,
