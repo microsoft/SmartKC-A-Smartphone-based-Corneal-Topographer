@@ -93,7 +93,7 @@ error = corneal_top_obj.generate_topography_maps(
 
 ## Running Script
 
-`python main.py --n_mires 22 --working_distance 75.0 --camera_params "4.8 6.4 4.755" --model_file ./hardware/ring_distribution.txt --base_dir ./data/sample_images`
+`python main.py --n_mires 22 --working_distance 75.0 --camera_params "4.8 6.4 4.755" --model_file ./hardware/ring_distribution.txt --base_dir ./data/sample_images/ --heuristics_cleanup_flag --heuristics_bump_cleanup_flag`
 
 ## Sample outputs
 

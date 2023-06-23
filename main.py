@@ -88,6 +88,14 @@ parser.add_argument(
     type=float,
     help="Accounting for gap (in mm) between eye and largest ring.",
 )
+# Current gap1 computation seems to underpredict working distance (resulting in underpredicting simK values)
+# Emprirical evidence suggests that increasing it by 30% (for gap2=4) yield good results.
+parser.add_argument(
+    "--gap1_correction",
+    default=1.3,
+    type=float,
+    help="Correcting gap1 by a factor.",
+)
 parser.add_argument(
     "--gap2",
     default=4,
@@ -109,6 +117,12 @@ parser.add_argument(
     "--heuristics_bump_cleanup_flag",
     action='store_true',
     help="Flag to run heuristics based bump cleanup of mire points",
+)
+parser.add_argument(
+    "--centers_filename",
+    default=None,
+    type=str,
+    help="Filename to read the centers from in format: image_name center_x center_y",
 )
 
 class corneal_top_gen:
@@ -397,7 +411,8 @@ class corneal_top_gen:
         center_selection="auto",
         marked_center = None,
         heuristics_cleanup_flag = True,
-        heuristics_bump_cleanup_flag = True
+        heuristics_bump_cleanup_flag = True,
+        gap1_correction = 1
     ):
 
         self.output = self.test_name
@@ -473,7 +488,8 @@ class corneal_top_gen:
 
         mire_20_radius = np.mean(r_pixels[20][15:330])*2.0
         if self.f_gap1 is not None:
-            err1 = [round(self.f_gap1(1/mire_20_radius),2)]
+            err1 = [self.f_gap1(1/mire_20_radius)]
+            err1 = [round(err1[0]*gap1_correction, 2)]
 
         # get image real dimensions, account for upsampling
         h, w = cv2.imread(base_dir + "/" + image_name + ".jpg").shape[:2]
@@ -510,6 +526,9 @@ class corneal_top_gen:
                 image_overlay[mask] = [0, 0, 0]
                 tan_map_overlay = image_overlay + tan_map
                 axial_map_overlay = image_overlay + axial_map
+
+                with open(self.output + "/result_simK.csv", "a") as f:
+                    f.write(image_name + "," + str(sims[0]) + "," + str(sims[1]) + "," + str(sims[2]) + "\n")
 
                 cv2.putText(
                     tan_map_overlay,
@@ -560,13 +579,26 @@ class corneal_top_gen:
         logging.warning("Test Complete!")
         return errors, sims, [image_gray, image_seg, image_mp, tan_map_overlay, axial_map_overlay]
 
+def read_center(center_filename, image_name):
+    file = open(center_filename, 'r')
+    lines = file.readlines()
+    for line in lines:
+        if (line.split()[0]+".jpg") == image_name:
+            return [int(line.split()[1]), int(line.split()[2])]
+    return (-1, -1)
 
 if __name__ == "__main__":
     # parsing arguments
     args = parser.parse_args()
 
     # getting parameters for corneal_top_obj
-    f_inv_20_5 = np.poly1d([3583.52156815, -17.31674123]) # 5 mm gap2, mire_21, id_20
+    f_inv_20 = None
+    if args.gap2 == 3:
+        f_inv_20 = np.poly1d([3652.09954861, -17.22770463]) # 3 mm gap2, mire_21, id_20
+    elif args.gap2 == 4:
+        f_inv_20 = np.poly1d([3617.81645183, -17.2737687]) # 4 mm gap2, mire_21, id_20
+    elif args.gap2 == 5:
+        f_inv_20 = np.poly1d([3583.52156815, -17.31674123]) # 5 mm gap2, mire_21, id_20
     sensor_dims = None
     f_len = None
     if (args.camera_params is not None):
@@ -623,14 +655,17 @@ if __name__ == "__main__":
                                 marked_center = list(map(float, row['marked_center'].split('|')))
                                 break
                 
-                print(marked_center, "MARKED_CENETER")
+                print(marked_center, "MARKED_CENTER")
+                if args.centers_filename is not None:
+                    center = read_center(base_dir+args.centers_filename, filename)
                 # create the corneal_top_gen class object
                 corneal_top_obj = corneal_top_gen(
                     args.model_file, args.working_distance, sensor_dims, 
                     f_len, args.start_angle, args.end_angle, args.jump, 
-                    args.upsample, args.n_mires, f_inv_20_5,
+                    args.upsample, args.n_mires, f_inv_20,
                     )
                 
+                # TODO: Clean up such that only one center is passed
                 corneal_top_obj.generate_topography_maps(
                 base_dir,
                 filename,
@@ -642,7 +677,8 @@ if __name__ == "__main__":
                 center_selection=selection_mode,
                 heuristics_cleanup_flag = args.heuristics_cleanup_flag,
                 heuristics_bump_cleanup_flag = args.heuristics_bump_cleanup_flag,
-                marked_center=marked_center
+                marked_center=marked_center,
+                gap1_correction = args.gap1_correction
                 )
             except Exception as e:
                 print(filename, selection_mode, e)
