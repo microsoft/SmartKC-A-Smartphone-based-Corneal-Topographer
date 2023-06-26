@@ -162,12 +162,12 @@ def preprocess_image(
     # crop image to bring it to a reasonable size (1200 x 1200)
     image_crop = None
     marked_center_crop = None
-    if center[0] != -1 and center[1] != -1:
-        center = (center[0]//2+offset[0], center[1]//2+offset[1]) # divide by zoom
-        image_crop, marked_center_crop = crop_around_center(image, crop_dims=crop_dims, center=center, marked_center = marked_center)
-        center = (image_crop.shape[1]//2, image_crop.shape[0]//2)
-    else:
-        image_crop, marked_center_crop = crop_around_center(image, crop_dims=crop_dims, marked_center = marked_center)
+    # if center[0] != -1 and center[1] != -1:
+    #     center = (center[0]//2+offset[0], center[1]//2+offset[1]) # divide by zoom
+    #     image_crop, marked_center_crop = crop_around_center(image, crop_dims=crop_dims, center=center, marked_center = marked_center)
+    #     center = (image_crop.shape[1]//2, image_crop.shape[0]//2)
+    # else:
+    image_crop, marked_center_crop = crop_around_center(image, crop_dims=crop_dims, marked_center = marked_center)
     
     # Step 3: Locate Image Center
     if center[0] == -1 and center[1] == -1:
