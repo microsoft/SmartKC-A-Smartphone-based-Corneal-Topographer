@@ -456,7 +456,7 @@ def replace_bump_data_with_mean_of_rest(idx, data_seq, bump_regions, r_pixels):
         if val < 0: val = r_pixels[0][i]
         diff.append(val)
     median = np.median(val)
-    print(median, "median")
+    # print(median, "median")
     for i in bump_indices:
       for bump in bump_regions:
         if bump[0] <=i <= bump[1]:
@@ -490,7 +490,7 @@ def plot_array(array1, legend1, output_file):
   
 def detect_and_replace_bumps(i, data_seq, threshold, r_pixels):
   bump_regions, derivative = detect_bumps(data_seq, threshold)
-  print(f"bump_regions: {bump_regions}")
+#   print(f"bump_regions: {bump_regions}")
 
   data_seq_orig = data_seq.copy()
   data_seq = replace_bump_data_with_mean_of_rest(i, data_seq, bump_regions, r_pixels)

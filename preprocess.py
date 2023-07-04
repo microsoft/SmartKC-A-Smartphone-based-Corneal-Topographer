@@ -138,7 +138,6 @@ def preprocess_image(
     center_selection="manual",
     marked_center = None
 ):
-    print(marked_center, "CENTER_SELECTION")
     script_dir = os.path.dirname(__file__)
     # NOTE THIS EXPECTS THE INPUT IMAGE TO HAVE 3000x4000 RESOLUTION
 

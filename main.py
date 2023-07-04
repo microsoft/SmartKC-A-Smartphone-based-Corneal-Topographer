@@ -639,12 +639,12 @@ if __name__ == "__main__":
         output_dir = date.today().strftime("%d_%m_%Y")
     else:
         output_dir = args.output_dir
-    print("Output directory: ", output_dir)
+    # print("Output directory: ", output_dir)
     
     for selection_mode in execution_order:
         while len(to_process):
             filename = to_process.pop()
-            print("Running for file:", filename, "with mode: ", selection_mode)
+            print("Running for file:", filename, "with mode:", selection_mode)
             try:
                 csv_file_parts = filename.split('_')[:-2]
                 csv_file_name = '_'.join(csv_file_parts) + '.csv'
@@ -654,7 +654,7 @@ if __name__ == "__main__":
                 marked_center = None
                 
                 # Open only if csv available
-                print(csv_file_path, "CSV_FILE_PATH")
+                # print(csv_file_path, "CSV_FILE_PATH")
                 if (os.path.exists(csv_file_path)):
                     # try to read values
                     with open(csv_file_path, newline='') as csvfile:
@@ -668,7 +668,7 @@ if __name__ == "__main__":
                                 marked_center = list(map(float, row['marked_center'].split('|')))
                                 break
                 
-                print(marked_center, "MARKED_CENTER")
+                # print(marked_center, "MARKED_CENTER")
                 if args.centers_filename is not None:
                     center = read_center(base_dir+args.centers_filename, filename)
                 # create the corneal_top_gen class object
@@ -694,13 +694,11 @@ if __name__ == "__main__":
                 gap1_correction = args.gap1_correction
                 )
             except Exception as e:
-                print(filename, selection_mode, e)
                 failed.add(filename)
         print("Following files failed for center mode", selection_mode, " : ", failed)
         # Try failed files for next mode
         to_process = list(failed)
         failed = []
-        print(to_process, selection_mode)
     
     if (len(failed)):
         print("Failed to generate heatmaps for files: ", failed)
