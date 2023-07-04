@@ -699,6 +699,7 @@ if __name__ == "__main__":
         print("Following files failed for center mode", selection_mode, " : ", failed)
         # Try failed files for next mode
         to_process = list(failed)
+        failed = []
         print(to_process, selection_mode)
     
     if (len(failed)):
