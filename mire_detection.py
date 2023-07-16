@@ -180,11 +180,30 @@ def clean_points(image_cent_list, image_gray, image_name, center,
     plt.savefig(output_folder+'/'+image_name+'/plots.png')
     plt.close()
     
+    flagged_points = []
     if (heuristics_bump_cleanup_flag):
-        r_pixels = bump_cleanup_heuristics(r_pixels, output_folder, image_name)
-    
+        _, bump_flagged = bump_cleanup_heuristics(r_pixels, output_folder, image_name)
+        for mire_number in range(len(bump_flagged)):
+            for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+                if angle in bump_flagged[mire_number]:
+                    flagged_points.append((mire_number, angle))
+        print(flagged_points, "bump")
+        
     if (heuristics_cleanup_flag): 
-        r_pixels = cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name)
+        r_pixels, cleanup_flagged  = cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name)
+        flagged_points += cleanup_flagged
+    
+    for mire in range(n_mires):
+        r_pixels_temp_mj = []
+        angle_temp_mj = []
+        for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+            if (mire, angle) not in flagged_points:
+                r_pixels_temp_mj.append(r_pixels[mire][idx])
+                angle_temp_mj.append(angle)
+        plt.plot(angle_temp_mj, r_pixels_temp_mj, "o", markersize=2, label=str(mire))
+    plt.legend()
+    plt.savefig(output_folder+'/'+image_name+'/plots-mj-dot.png')
+    plt.close()
     
     # uncomment for real image, skip first mire
     r_pixels = r_pixels[1:]
@@ -205,7 +224,7 @@ def clean_points(image_cent_list, image_gray, image_name, center,
 
     logging.info("Cleaning Done!")
     # note that coords_fixed has order of coords as {(y,x)}
-    return r_pixels, coords_fixed, image_gray
+    return r_pixels, flagged_points, coords_fixed, image_gray
 
 def clean_points_support(image_cent_list, image_gray, image_name, 
     center, n_mires=20, jump=2, start_angle=0, end_angle=360, 
@@ -296,6 +315,7 @@ def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, ou
 
     plt.figure()
     r_pixels_cleaned = []
+    flagged_points = []
     for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
         # Reshaping from mires x angle to angle x mires
         r_pixels_angle = []
@@ -308,6 +328,7 @@ def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, ou
             if val==0:
                 diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle[:i])][1:]
                 r_pixels_angle[i] = r_pixels_angle[i-1] + np.mean(diff_val)
+                flagged_points.append((i, angle))
 
         # Fixing (b) no higher mire touching a lower mire
         flag = True
@@ -319,6 +340,7 @@ def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, ou
                     else:
                         diff_val[i] = np.mean(diff_val[:i-1])
                     r_pixels_angle[i+1] = r_pixels_angle[i+1] + diff_val[i]
+                    flagged_points.append((i+1, angle))
                     diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]            
             flag = False
             for i, val in enumerate(diff_val):
@@ -330,6 +352,7 @@ def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, ou
         while np.std(diff_val)>2:
             max_idx = diff_val.index(max(diff_val))
             r_pixels_angle[max_idx+1] = r_pixels_angle[max_idx] + np.mean(diff_val)
+            flagged_points.append((max_idx+1, angle))
             diff_val = [item - r_pixels_angle[idx1 - 1] for idx1, item in enumerate(r_pixels_angle)][1:]
         r_pixels_cleaned.append(r_pixels_angle)
 
@@ -345,22 +368,27 @@ def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, ou
     plt.savefig(output_folder+'/'+image_name+'/plots-modified.png')
     plt.close()
     
-    return r_pixels
-
+    return r_pixels, flagged_points
 
 # Nipun's code
-
 def bump_cleanup_heuristics(r_pixels, output_folder, image_name, threshold=2):
     smoothed_seqs = []
+    bump_regions = []
     for i, v in enumerate(r_pixels):
     #   plot_filename = f"plots_bump/plot_{i}"
     #   print(f"plot_bump_filename: {plot_filename}")
-      smoothed_v = detect_and_replace_bumps(i, v, threshold, r_pixels)
+      smoothed_v, b_r = detect_and_replace_bumps(i, v, threshold, r_pixels)
+      bump_regions.append(b_r)
       smoothed_seqs.append(smoothed_v)
     plot_array_list(smoothed_seqs, [f"{i}" for i in range(len(smoothed_seqs))], output_folder+'/'+ image_name +"/" + 'bump_smoothened.png')
-    return smoothed_seqs
+    return smoothed_seqs, bump_regions
 
-def detect_bumps(array, threshold=2):
+def detect_bumps(segment, threshold=2):
+  org_idx = []
+  array = []
+  for i in segment:
+    array.append(i[0])
+    org_idx.append(i[1])
   # compute the derivative of the array
   derivative = np.gradient(array)
   # define constants for the point types
@@ -411,14 +439,14 @@ def detect_bumps(array, threshold=2):
       # if a high negative derivative point is followed by a soft point and start index is not None and bump type is positive
       elif prev_point_type == HIGH_NEGATIVE and point_type == SOFT and start_index is not None and bump_type == "positive":
         # append a pair of start and end indices and bump type to the list 
-        bump_regions.append((start_index, i, bump_type))
+        bump_regions.append((org_idx[start_index], org_idx[i], bump_type))
         # reset the start index to None and bump type to None
         start_index = None
         bump_type = None
       # if a high positive derivative point is followed by a soft point and start index is not None and bump type is negative 
       elif prev_point_type == HIGH_POSITIVE and point_type == SOFT and start_index is not None and bump_type == "negative":
         # append a pair of start and end indices and bump type to the list 
-        bump_regions.append((start_index, i, bump_type))
+        bump_regions.append((org_idx[start_index], org_idx[i], bump_type))
         # reset the start index to None and bump type to None
         start_index = None
         bump_type = None      
@@ -428,10 +456,9 @@ def detect_bumps(array, threshold=2):
   # check if there is a pending bump region after the loop and start index is not None and bump type is not None 
   if start_index is not None and bump_type is not None:
     # append a pair of start and end indices and bump type to the list 
-    bump_regions.append((start_index, len(derivative) - 1, bump_type))
+    bump_regions.append((org_idx[start_index], org_idx[len(derivative) - 1], bump_type))
 
   return bump_regions, derivative
-
 
 def replace_bump_data_with_mean_of_rest(idx, data_seq, bump_regions, r_pixels):
   # Compute indices of data_seq points inside the bump regions
@@ -489,14 +516,33 @@ def plot_array(array1, legend1, output_file):
   #plt.show()
   
 def detect_and_replace_bumps(i, data_seq, threshold, r_pixels):
-  bump_regions, derivative = detect_bumps(data_seq, threshold)
-#   print(f"bump_regions: {bump_regions}")
+  
+  segments = []
+  curr_segment = []
+  for idx, ele in enumerate(data_seq):
+    if ele == 0:
+      if len(curr_segment):
+        segments.append(curr_segment)
+        curr_segment = []
+    else:
+      curr_segment.append((ele, idx))
+  if len(curr_segment): segments.append(curr_segment)
+  
+  bump_regions = []
+  for segment in segments:
+    segment_bump_regions, derivative = detect_bumps(segment, threshold)
+    for bump_region in segment_bump_regions:
+      bump_regions.append(bump_region)
+    print(f"bump_regions: {segment_bump_regions}")
 
   data_seq_orig = data_seq.copy()
-  data_seq = replace_bump_data_with_mean_of_rest(i, data_seq, bump_regions, r_pixels)
+#   data_seq = replace_bump_data_with_mean_of_rest(i, data_seq, bump_regions, r_pixels)
 #   plot_two_arrays(data_seq_orig, data_seq, "original", "smoothed", f"{plot_filename_prefix}_smoothed.png")
 #   plot_array(derivative[2:], "derivative", f"{plot_filename_prefix}_derivative.png")
-  return data_seq
+  bump_indices = []
+  for bump in bump_regions:
+      bump_indices.extend(range(bump[0], bump[1] + 1))
+  return data_seq, bump_indices
 
 def plot_array_list(array_list, legend_list, output_file):
   for i in range(len(array_list)):

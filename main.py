@@ -2,6 +2,7 @@
 # Author: Siddhartha Gairola (t-sigai at microsoft dot com))
 
 import os
+import traceback
 import cv2
 import logging
 from datetime import date
@@ -37,7 +38,7 @@ parser.add_argument("--end_angle",
 )
 parser.add_argument("--jump", 
     default=1, 
-    type=float, 
+    type=int, 
     help="Jump between meridians",
 )
 parser.add_argument(
@@ -293,7 +294,7 @@ class corneal_top_gen:
 
         return error, tan_map, axial_map, sim_k1, sim_k2, round(-angle_k1 * 180 / np.pi, 1), average_k, diff, ppk
 
-    def run_arc_step_gen_maps(self, image_seg, image_name, center, coords, h, w, err1=0, err2=0):
+    def run_arc_step_gen_maps(self, image_seg, image_name, center, coords, h, w, err1=0, err2=0, flagged_points = []):
         blank = np.full((image_seg.shape[0], image_seg.shape[1]), -1e6, dtype="float64")
         elevation, error_map = blank.copy(), blank.copy()
 
@@ -381,6 +382,8 @@ class corneal_top_gen:
             # get 3d points
             angle_three_d_points = []
             for mire in range(len(coords)):
+                if (mire, angle) in flagged_points:
+                    continue
                 x, y, z = get_three_d_points(ys[mire + 1], zs[mire + 1], angle)
                 angle_three_d_points.append((x, y, z))
                 plot_x.append(x); plot_y.append(y); plot_z.append(z);
@@ -482,7 +485,7 @@ class corneal_top_gen:
         # plot_highres(image_cent_list, center, self.n_mires, self.jump, self.start_angle, self.end_angle)
 
         # clean points
-        r_pixels, coords, image_mp = clean_points(
+        r_pixels, flagged_points, coords, image_mp = clean_points(
             image_cent_list, image_gray.copy(), image_name, center, self.n_mires, self.jump, self.start_angle, self.end_angle, 
             output_folder=self.output, 
             heuristics_cleanup_flag = heuristics_cleanup_flag,
@@ -507,7 +510,7 @@ class corneal_top_gen:
         for e1 in err1:
             for e2 in err2:
                 error, tan_map, axial_map, sims = self.run_arc_step_gen_maps(
-                    image_seg, image_name, center, coords, h, w, err1=e1, err2=e2
+                    image_seg, image_name, center, coords, h, w, err1=e1, err2=e2, flagged_points=flagged_points
                 )
                 errors.append(error)
 
@@ -694,6 +697,7 @@ if __name__ == "__main__":
                 gap1_correction = args.gap1_correction
                 )
             except Exception as e:
+                traceback.print_exc()
                 failed.add(filename)
         print("Following files failed for center mode", selection_mode, " : ", failed)
         # Try failed files for next mode
