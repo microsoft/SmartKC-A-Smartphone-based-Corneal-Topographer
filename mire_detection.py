@@ -157,14 +157,12 @@ def clean_points(image_cent_list, image_gray, image_name, center,
 
         # idx here is traversing the angles
         for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
-
             if len(image_cent_list[idx]) <= mire:
                 r_pixels_temp.append(0)
                 coords_temp.append((-1,-1))
             else:
-                r = math.sqrt((center[0]-image_cent_list[idx][mire][0])**2 
-                    + (center[1]-image_cent_list[idx][mire][1])**2)
                 x, y = image_cent_list[idx][mire][0], image_cent_list[idx][mire][1]
+                r = math.sqrt((center[0]-x)**2 + (center[1]-y)**2)
                 r_pixels_temp.append(r)
                 coords_temp.append((y,x)) # Note: coords is (y,x) rather than (x,y)
 
