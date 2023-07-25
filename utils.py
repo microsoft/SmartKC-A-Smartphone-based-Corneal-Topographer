@@ -9,6 +9,25 @@ from matplotlib import cm as __cm__
 from matplotlib.ticker import LinearLocator as __LinearLocator__
 from matplotlib.ticker import FormatStrFormatter as __FormatStrFormatter__
 
+colors_list = [
+[0,0,255],
+[0,255,0],
+[255,0,0],
+[0,255,255],
+[255,0,255],
+[255,255,0],
+[0,0,128],
+[128,128,255],
+[255,123,123],
+[0,102,255],
+[102,153,51],
+[153,255,255],
+[204,204,51],
+[0,204,255],
+[150,150,150],
+[255, 255, 255],
+[0,0,0]
+]
 
 def check_angle(angle, skip_angles):
     # assuming angle lies between 0 and 360 degrees
@@ -61,10 +80,7 @@ def plot_color_rb(img, points):
         # for entire set of points (here points are (y,x))
         for mire in range(len(points)):
             for idx, point in enumerate(points[mire]):
-                if mire%2 == 1:
-                    img[int(point[0]), int(point[1]), :] = [0, 255, 255] # yellow
-                else:
-                    img[int(point[0]), int(point[1]), :] = [0, 0, 255] # red
+                img[int(point[0]), int(point[1]), :] = colors_list[mire%15]
     else:
         # for each meridian
         # initially points were (x,y)

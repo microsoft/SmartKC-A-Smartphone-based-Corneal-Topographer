@@ -157,14 +157,12 @@ def clean_points(image_cent_list, image_gray, image_name, center,
 
         # idx here is traversing the angles
         for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
-
             if len(image_cent_list[idx]) <= mire:
                 r_pixels_temp.append(0)
                 coords_temp.append((-1,-1))
             else:
-                r = math.sqrt((center[0]-image_cent_list[idx][mire][0])**2 
-                    + (center[1]-image_cent_list[idx][mire][1])**2)
                 x, y = image_cent_list[idx][mire][0], image_cent_list[idx][mire][1]
+                r = math.sqrt((center[0]-x)**2 + (center[1]-y)**2)
                 r_pixels_temp.append(r)
                 coords_temp.append((y,x)) # Note: coords is (y,x) rather than (x,y)
 
@@ -456,7 +454,7 @@ def replace_bump_data_with_mean_of_rest(idx, data_seq, bump_regions, r_pixels):
         if val < 0: val = r_pixels[0][i]
         diff.append(val)
     median = np.median(val)
-    print(median, "median")
+    # print(median, "median")
     for i in bump_indices:
       for bump in bump_regions:
         if bump[0] <=i <= bump[1]:
@@ -490,7 +488,7 @@ def plot_array(array1, legend1, output_file):
   
 def detect_and_replace_bumps(i, data_seq, threshold, r_pixels):
   bump_regions, derivative = detect_bumps(data_seq, threshold)
-  print(f"bump_regions: {bump_regions}")
+#   print(f"bump_regions: {bump_regions}")
 
   data_seq_orig = data_seq.copy()
   data_seq = replace_bump_data_with_mean_of_rest(i, data_seq, bump_regions, r_pixels)

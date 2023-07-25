@@ -10,7 +10,7 @@ import matplotlib.ticker as ticker
 
 np.set_printoptions(threshold=np.inf)
 import argparse
-import pdb
+import csv
 
 # external modules
 from preprocess import preprocess_image
@@ -88,6 +88,14 @@ parser.add_argument(
     type=float,
     help="Accounting for gap (in mm) between eye and largest ring.",
 )
+# Current gap1 computation seems to underpredict working distance (resulting in underpredicting simK values)
+# Emprirical evidence suggests that increasing it by 30% (for gap2=4) yield good results.
+parser.add_argument(
+    "--gap1_correction",
+    default=1.3,
+    type=float,
+    help="Correcting gap1 by a factor.",
+)
 parser.add_argument(
     "--gap2",
     default=4,
@@ -96,9 +104,9 @@ parser.add_argument(
 )
 parser.add_argument(
     "--center_selection",
-    default="auto",
+    default="default",
     type=str,
-    help="Flag for setting mode for center selection (auto or manual)",
+    help="Flag for setting mode for center selection (auto or manual-pc or manual-app)",
 )
 parser.add_argument(
     "--heuristics_cleanup_flag",
@@ -110,11 +118,24 @@ parser.add_argument(
     action='store_true',
     help="Flag to run heuristics based bump cleanup of mire points",
 )
+parser.add_argument(
+    "--centers_filename",
+    default=None,
+    type=str,
+    help="Filename to read the centers from in format: image_name center_x center_y",
+)
+parser.add_argument(
+    "--output_dir",
+    default=None,
+    type=str,
+    help="Output directory name. If not provided, the current date is used for the directory name.",
+)
+
 
 class corneal_top_gen:
 
     def __init__(
-        self, model_file, working_distance, sensor_dims, f_len, start_angle, end_angle, jump, upsample, n_mires, f_gap1, zernike_degree=[8], test_name=None
+        self, model_file, working_distance, sensor_dims, f_len, start_angle, end_angle, jump, upsample, n_mires, f_gap1, test_name, zernike_degree=[8]
         ):
         self.model_file = model_file # file which consists of the placido head dimensions
         self.working_distance = working_distance # distance between camera pupil and cornea apex
@@ -127,15 +148,14 @@ class corneal_top_gen:
         self.ups = upsample # if the image has to be upsampled or not
         self.n_mires = n_mires # number of mires to process
         self.zernike_degree = zernike_degree # degree of the zernike polynomial used for fitting
-        if test_name == None:
-            self.test_name = date.today().strftime("%d_%m_%Y")
+        self.test_name = test_name
     
     # to handle different phones with different intrinsic camera params
     # TODO: Replace f_gap1_wrapper with f_gap1 in the code below
     def f_gap1_wrapper(f_gap1, mire_radius, base_focal_length, base_res_width, base_sensor_width, current_res_width):
         f_base_f_curr = base_focal_length/self.sensor_dims[2]
         base_r_w_base_s_w = base_res_width/base_sensor_width
-        mire_radius = (mire_radius/currend_res_width*self.sensor_dims[0])*f_base_f_curr*base_r_w_base_s_w
+        mire_radius = (mire_radius/current_res_width*self.sensor_dims[0])*f_base_f_curr*base_r_w_base_s_w
         mire_radius = mire_radius*2.0 # since original image was 6000x8000 at the time of calibration in simulation
         return round(f_gap1(1/mire_radius), 2)
 
@@ -395,8 +415,10 @@ class corneal_top_gen:
         center=(-1, -1), downsample=False, blur=True, upsample=None,
         err1=[0], err2=[0], skip_angles=[[-1, -1], [-1, -1]],
         center_selection="auto",
+        marked_center = None,
         heuristics_cleanup_flag = True,
-        heuristics_bump_cleanup_flag = True
+        heuristics_bump_cleanup_flag = True,
+        gap1_correction = 1
     ):
 
         self.output = self.test_name
@@ -429,7 +451,8 @@ class corneal_top_gen:
             iso_dims=iso_dims,
             output_folder=self.output,
             filter_radius=10,
-            center_selection=center_selection
+            center_selection=center_selection,
+            marked_center=marked_center
         )
         
         #cv2.imwrite(os.path.dirname(__file__)+"_gray.png", image_gray)
@@ -471,7 +494,8 @@ class corneal_top_gen:
 
         mire_20_radius = np.mean(r_pixels[20][15:330])*2.0
         if self.f_gap1 is not None:
-            err1 = [round(self.f_gap1(1/mire_20_radius),2)]
+            err1 = [self.f_gap1(1/mire_20_radius)]
+            err1 = [round(err1[0]*gap1_correction, 2)]
 
         # get image real dimensions, account for upsampling
         h, w = cv2.imread(base_dir + "/" + image_name + ".jpg").shape[:2]
@@ -508,6 +532,9 @@ class corneal_top_gen:
                 image_overlay[mask] = [0, 0, 0]
                 tan_map_overlay = image_overlay + tan_map
                 axial_map_overlay = image_overlay + axial_map
+
+                with open(self.output + "/result_simK.csv", "a") as f:
+                    f.write(image_name + "," + str(sims[0]) + "," + str(sims[1]) + "," + str(sims[2]) + "\n")
 
                 cv2.putText(
                     tan_map_overlay,
@@ -558,25 +585,34 @@ class corneal_top_gen:
         logging.warning("Test Complete!")
         return errors, sims, [image_gray, image_seg, image_mp, tan_map_overlay, axial_map_overlay]
 
+def read_center(center_filename, image_name):
+    file = open(center_filename, 'r')
+    lines = file.readlines()
+    for line in lines:
+        if (line.split()[0]+".jpg") == image_name:
+            return [int(line.split()[1]), int(line.split()[2])]
+    return (-1, -1)
 
 if __name__ == "__main__":
     # parsing arguments
     args = parser.parse_args()
 
     # getting parameters for corneal_top_obj
-    f_inv_20_5 = np.poly1d([3583.52156815, -17.31674123]) # 5 mm gap2, mire_21, id_20
-    sensor_dims = (
-        float(args.camera_params.split()[0]),
-        float(args.camera_params.split()[1]),
-    )  # "4.27, 5.68, 4.25"
-    f_len = float(args.camera_params.split()[2]) # focal length of the camera
-
-    # create the corneal_top_gen class object
-    corneal_top_obj = corneal_top_gen(
-        args.model_file, args.working_distance, sensor_dims, 
-        f_len, args.start_angle, args.end_angle, args.jump, 
-        args.upsample, args.n_mires, f_inv_20_5,
-        )
+    f_inv_20 = None
+    if args.gap2 == 3:
+        f_inv_20 = np.poly1d([3652.09954861, -17.22770463]) # 3 mm gap2, mire_21, id_20
+    elif args.gap2 == 4:
+        f_inv_20 = np.poly1d([3617.81645183, -17.2737687]) # 4 mm gap2, mire_21, id_20
+    elif args.gap2 == 5:
+        f_inv_20 = np.poly1d([3583.52156815, -17.31674123]) # 5 mm gap2, mire_21, id_20
+    sensor_dims = None
+    f_len = None
+    if (args.camera_params is not None):
+        sensor_dims = (
+            float(args.camera_params.split()[0]),
+            float(args.camera_params.split()[1]),
+        )  # "4.27, 5.68, 4.25"
+        f_len = float(args.camera_params.split()[2]) # focal length of the camera
 
     # get details for current test image
     base_dir = args.base_dir  # base directory
@@ -587,17 +623,82 @@ if __name__ == "__main__":
     # call function to run pipeline and generate_topography_maps
     # expects image to be in .jpg format
     
-    for filename in os.listdir(base_dir):
-        print("Running for file:", filename)
-        error = corneal_top_obj.generate_topography_maps(
-            base_dir,
-            filename,
-            center=center,
-            downsample=True,
-            blur=True,
-            err1=[args.gap1],
-            err2=[args.gap2],
-            center_selection=args.center_selection,
-            heuristics_cleanup_flag = args.heuristics_cleanup_flag,
-            heuristics_bump_cleanup_flag = args.heuristics_bump_cleanup_flag
-        )
+    to_process = list(filter(lambda name: name.endswith('.jpg'), os.listdir(base_dir)))
+    failed = set()
+    execution_order = []
+    
+    # determine execution order from center_selection
+    center_selection = args.center_selection
+    if (center_selection == 'default'): execution_order = ['manual-android', 'auto', 'manual-pc']
+    elif (center_selection == 'manual-android'): execution_order = ['manual-android', 'auto', 'manual-pc']
+    elif (center_selection == 'auto'): execution_order = ['auto', 'manual-pc']
+    elif (center_selection == 'manual-pc'): execution_order = ['manual-pc']
+
+    # set the output directory
+    if args.output_dir is None:
+        output_dir = date.today().strftime("%d_%m_%Y")
+    else:
+        output_dir = args.output_dir
+    # print("Output directory: ", output_dir)
+    
+    for selection_mode in execution_order:
+        while len(to_process):
+            filename = to_process.pop()
+            print("Running for file:", filename, "with mode:", selection_mode)
+            try:
+                csv_file_parts = filename.split('_')[:-2]
+                csv_file_name = '_'.join(csv_file_parts) + '.csv'
+                csv_file_path = base_dir + '/' + csv_file_name
+                
+                focal_length = None
+                marked_center = None
+                
+                # Open only if csv available
+                # print(csv_file_path, "CSV_FILE_PATH")
+                if (os.path.exists(csv_file_path)):
+                    # try to read values
+                    with open(csv_file_path, newline='') as csvfile:
+                        reader = csv.DictReader(csvfile)
+                        for row in reader:
+                            if row["image_name"] == filename:
+                                f_len = row['focal_length']
+                                sensor_dims = list(map(float, row['camera_physical_size'].split('x')))
+                                sensor_dims.sort()
+                                sensor_dims = tuple(sensor_dims)
+                                marked_center = list(map(float, row['marked_center'].split('|')))
+                                break
+                
+                # print(marked_center, "MARKED_CENTER")
+                if args.centers_filename is not None:
+                    center = read_center(base_dir+args.centers_filename, filename)
+                # create the corneal_top_gen class object
+                corneal_top_obj = corneal_top_gen(
+                    args.model_file, args.working_distance, sensor_dims, 
+                    f_len, args.start_angle, args.end_angle, args.jump, 
+                    args.upsample, args.n_mires, f_inv_20, output_dir,
+                    )
+                
+                # TODO: Clean up such that only one center is passed
+                corneal_top_obj.generate_topography_maps(
+                base_dir,
+                filename,
+                center=center,
+                downsample=True,
+                blur=True,
+                err1=[args.gap1],
+                err2=[args.gap2],
+                center_selection=selection_mode,
+                heuristics_cleanup_flag = args.heuristics_cleanup_flag,
+                heuristics_bump_cleanup_flag = args.heuristics_bump_cleanup_flag,
+                marked_center=marked_center,
+                gap1_correction = args.gap1_correction
+                )
+            except Exception as e:
+                failed.add(filename)
+        print("Following files failed for center mode", selection_mode, " : ", failed)
+        # Try failed files for next mode
+        to_process = list(failed)
+        failed = []
+    
+    if (len(failed)):
+        print("Failed to generate heatmaps for files: ", failed)
