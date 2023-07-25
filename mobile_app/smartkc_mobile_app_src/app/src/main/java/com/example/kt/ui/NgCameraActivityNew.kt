@@ -135,15 +135,17 @@ class NgCameraActivityNew : AppCompatActivity() {
         maxCounts = bundle.getString("number_of_images")?.toInt() ?: 3
         hash_map = getIntent().getSerializableExtra("hash_map") as HashMap<*, *>
 
-        // get current idx
-        val dir = File(getExternalFilesDir(null), MainActivity.PACKAGE_NAME + "/" + dir_name)
-        if(dir.listFiles { dir, name -> name.toLowerCase().startsWith(left_right!!) } != null)
-            idx = dir.listFiles { dir, name -> name.toLowerCase().startsWith(left_right!!) }.size
         // Get center name
         center_name = sharedPrefs.getString("CENTER_NAME", "")
         if (center_name.isNullOrEmpty()) {
-              throw Error("Center name cannot be null")
+            throw Error("Center name cannot be null")
         }
+
+        // get current idx
+        val prefix = center_name + "_" + dir_name + "_" +  left_right
+        val dir = File(getExternalFilesDir(null), MainActivity.PACKAGE_NAME + "/" + dir_name)
+        if(dir.listFiles { dir, name -> name.toLowerCase().startsWith(prefix) } != null)
+            idx = dir.listFiles { dir, name -> name.startsWith(prefix) }.size
 
 
         outputDirectory = getOutputDirectory()
