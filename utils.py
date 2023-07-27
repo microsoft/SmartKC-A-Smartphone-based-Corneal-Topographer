@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm as __cm__
 from matplotlib.ticker import LinearLocator as __LinearLocator__
 from matplotlib.ticker import FormatStrFormatter as __FormatStrFormatter__
+from PIL import Image
 
 colors_list = [
 [0,0,255],
@@ -242,3 +243,22 @@ def draw_circles(img, center, radii, angle, sim_k):
     cv2.putText(img, str(sim_k[1]), (x2, y2), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255,255,255),1)
 
     return img
+
+def generate_colored_image(mires, out_path):
+    color_array = np.array(colors_list)
+    mires = np.array(mires)
+    
+    # Create a new image array with the same shape as the number array
+    image_array = np.zeros((*mires.shape, 3), dtype=np.uint8)
+    
+    # Assign the colors based on the number array
+    for i in np.unique(mires):
+        indices = np.where(mires == i)
+        if i == 0:
+            image_array[indices] = [0, 0, 0]
+            continue
+        image_array[indices] = color_array[i-1]
+    
+    # Create an image from the array and save it as a PNG
+    image = Image.fromarray(image_array)
+    image.save(out_path)

@@ -143,6 +143,20 @@ def process(image_seg, image_orig, center,
     # centroids with {(x,y)} order and has length as number of angles
     return image_cent_list, center, [image_or, image_and, image_mp]
 
+def plot_flagged_points(r_pixels, flagged_points, start_angle, end_angle, jump, image_path):
+    plt.figure()
+    for mire in range(len(r_pixels)):
+        r_pixels_temp_mj = []
+        angle_temp_mj = []
+        for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+            if (mire, angle) not in flagged_points:
+                r_pixels_temp_mj.append(r_pixels[mire][idx])
+                angle_temp_mj.append(angle)
+        plt.plot(angle_temp_mj, r_pixels_temp_mj, "o", markersize=2, label=str(mire))
+    plt.legend()
+    plt.savefig(image_path)
+    plt.close()
+
 def clean_points(image_cent_list, image_gray, image_name, center, 
     n_mires=20, jump=2, start_angle=0, end_angle=360, output_folder="out",
     heuristics_cleanup_flag=True,
@@ -185,23 +199,18 @@ def clean_points(image_cent_list, image_gray, image_name, center,
             for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
                 if angle in bump_flagged[mire_number]:
                     flagged_points.append((mire_number, angle))
-        print(flagged_points, "bump")
+        # print(flagged_points, "bump")
         
     if (heuristics_cleanup_flag): 
-        r_pixels, cleanup_flagged  = cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name)
+        _, cleanup_flagged  = cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name)
         flagged_points += cleanup_flagged
     
-    for mire in range(n_mires):
-        r_pixels_temp_mj = []
-        angle_temp_mj = []
-        for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
-            if (mire, angle) not in flagged_points:
-                r_pixels_temp_mj.append(r_pixels[mire][idx])
-                angle_temp_mj.append(angle)
-        plt.plot(angle_temp_mj, r_pixels_temp_mj, "o", markersize=2, label=str(mire))
-    plt.legend()
-    plt.savefig(output_folder+'/'+image_name+'/plots-mj-dot.png')
-    plt.close()
+    plot_path = output_folder+'/'+image_name+'/'+image_name+'_bump_flagged.png'
+    plot_flagged_points(r_pixels, bump_flagged, start_angle, end_angle, jump, plot_path)
+    plot_path = output_folder+'/'+image_name+'/'+image_name+'_cleanup_flagged.png'
+    plot_flagged_points(r_pixels, cleanup_flagged, start_angle, end_angle, jump, plot_path)
+    plot_path = output_folder+'/'+image_name+'/'+image_name+'_final_flagged.png'
+    plot_flagged_points(r_pixels, flagged_points, start_angle, end_angle, jump, plot_path)
     
     # uncomment for real image, skip first mire
     r_pixels = r_pixels[1:]
@@ -311,7 +320,7 @@ def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, ou
     # (b) no higher mire touching a lower mire, 
     # (c) no random peaks in one mire,
 
-    plt.figure()
+    # plt.figure()
     r_pixels_cleaned = []
     flagged_points = []
     for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
@@ -355,16 +364,16 @@ def cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, ou
         r_pixels_cleaned.append(r_pixels_angle)
 
     # Reshaping from angle x mires to mires x angle 
-    r_pixels = []
-    for mire in range(n_mires):
-        r_pixels_temp = []
-        for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
-            r_pixels_temp.append(r_pixels_cleaned[idx][mire])
-        plt.plot(np.arange(start_angle, end_angle, jump), r_pixels_temp, ls='-', label=str(mire))
-        r_pixels.append(r_pixels_temp)
-    plt.legend()
-    plt.savefig(output_folder+'/'+image_name+'/plots-modified.png')
-    plt.close()
+    # r_pixels = []
+    # for mire in range(n_mires):
+    #     r_pixels_temp = []
+    #     for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+    #         r_pixels_temp.append(r_pixels_cleaned[idx][mire])
+    #     plt.plot(np.arange(start_angle, end_angle, jump), r_pixels_temp, ls='-', label=str(mire))
+    #     r_pixels.append(r_pixels_temp)
+    # plt.legend()
+    # plt.savefig(output_folder+'/'+image_name+'/plots-modified.png')
+    # plt.close()
     
     return r_pixels, flagged_points
 
@@ -378,7 +387,7 @@ def bump_cleanup_heuristics(r_pixels, output_folder, image_name, threshold=2):
       smoothed_v, b_r = detect_and_replace_bumps(i, v, threshold, r_pixels)
       bump_regions.append(b_r)
       smoothed_seqs.append(smoothed_v)
-    plot_array_list(smoothed_seqs, [f"{i}" for i in range(len(smoothed_seqs))], output_folder+'/'+ image_name +"/" + 'bump_smoothened.png')
+    # plot_array_list(smoothed_seqs, [f"{i}" for i in range(len(smoothed_seqs))], output_folder+'/'+ image_name +"/" + 'bump_smoothened.png')
     return smoothed_seqs, bump_regions
 
 def detect_bumps(segment, threshold=2):
@@ -531,7 +540,6 @@ def detect_and_replace_bumps(i, data_seq, threshold, r_pixels):
     segment_bump_regions, derivative = detect_bumps(segment, threshold)
     for bump_region in segment_bump_regions:
       bump_regions.append(bump_region)
-    print(f"bump_regions: {segment_bump_regions}")
 
   data_seq_orig = data_seq.copy()
 #   data_seq = replace_bump_data_with_mean_of_rest(i, data_seq, bump_regions, r_pixels)

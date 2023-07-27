@@ -9,6 +9,9 @@ from datetime import date
 import numpy as np
 import matplotlib.ticker as ticker
 
+from segmentation_dl import segment_mires
+from segmentation_dl import get_mask
+
 np.set_printoptions(threshold=np.inf)
 import argparse
 import csv
@@ -131,7 +134,11 @@ parser.add_argument(
     type=str,
     help="Output directory name. If not provided, the current date is used for the directory name.",
 )
-
+parser.add_argument(
+    "--dl_segmentation",
+    action='store_true',
+    help="Flag to opt for DL based segmentation",
+)
 
 class corneal_top_gen:
 
@@ -421,6 +428,7 @@ class corneal_top_gen:
         marked_center = None,
         heuristics_cleanup_flag = True,
         heuristics_bump_cleanup_flag = True,
+        dl_segmentation_flag = True,
         gap1_correction = 1
     ):
 
@@ -472,10 +480,31 @@ class corneal_top_gen:
             )
 
         # Step 4: Mire detection + detect meridinial points on respective mires
-        image_cent_list, center, others = process(
-            image_seg, image_gray, center, self.jump, self.start_angle, self.end_angle
-        )
-        _, _, image_mp = others
+        if (dl_segmentation_flag):
+            print("Running segmentation on mask...")
+            # Converting to three channels as expected by segment_mires
+            image_gray_copy = image_gray.copy()
+            image_gray_with_channels = np.dstack((image_gray.copy(), np.dstack((image_gray_copy, image_gray_copy))))
+            # generate mask
+            mire_mask = get_mask(image_gray_with_channels)
+            # dump mask
+            image_prefix = image_name.split(".jpg")[0]
+            mask_file_path = self.output + "/" + image_prefix + "/" + image_prefix + "_mire_mask.csv"
+            mire_mask = mire_mask.astype(int)
+            generate_colored_image(mire_mask, self.output + "/" + image_prefix + "/" + image_prefix + "_mire_mask.png")
+            np.savetxt(mask_file_path, mire_mask, delimiter=",", fmt="%d")
+            # segment mires
+            image_cent_list, image_mp = segment_mires(
+                mire_mask,
+                center,
+                self.n_mires,
+                image_gray_with_channels
+            )
+        else:
+            image_cent_list, center, others = process(
+                image_seg, image_gray, center, self.jump, self.start_angle, self.end_angle
+            )
+            _, _, image_mp = others
 
         # copy the processed images to out
         image_name = image_name.split(".jpg")[0]
@@ -693,6 +722,7 @@ if __name__ == "__main__":
                 center_selection=selection_mode,
                 heuristics_cleanup_flag = args.heuristics_cleanup_flag,
                 heuristics_bump_cleanup_flag = args.heuristics_bump_cleanup_flag,
+                dl_segmentation_flag = args.dl_segmentation,
                 marked_center=marked_center,
                 gap1_correction = args.gap1_correction
                 )
