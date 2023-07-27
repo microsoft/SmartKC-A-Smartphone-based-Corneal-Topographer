@@ -202,7 +202,9 @@ class NgCheckImages : AppCompatActivity(), View.OnClickListener {
                 val markedCenter = myimage.crossCoors
                 hash_map!![imageFiles[image_index].name] = "Yes"
                 hash_map!![imageFiles[image_index].name + "_offset"] = "" + offset_distance
-                hash_map!![imageFiles[image_index].name + "_marked_center"] = "${markedCenter.x}|${markedCenter.y}"
+                if (markedCenter.x > 0 && markedCenter.y > 0) {
+                    hash_map!![imageFiles[image_index].name + "_marked_center"] = "${markedCenter.x}|${markedCenter.y}"
+                }
                 var intent = Intent(this, GetGTDataActivity::class.java)
                 if (left_right == "right") {
                     intent = Intent(this, PromptActivity::class.java)
