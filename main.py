@@ -9,8 +9,7 @@ from datetime import date
 import numpy as np
 import matplotlib.ticker as ticker
 
-from segmentation_dl import segment_mires
-from segmentation_dl import get_mask
+from mire_detection_dl import detect_mires_from_mask, detect_mires_mask_dl
 
 np.set_printoptions(threshold=np.inf)
 import argparse
@@ -137,7 +136,7 @@ parser.add_argument(
 parser.add_argument(
     "--dl_segmentation",
     action='store_true',
-    help="Flag to opt for DL based segmentation",
+    help="Flag to opt for DL based mire detection",
 )
 
 class corneal_top_gen:
@@ -482,19 +481,11 @@ class corneal_top_gen:
         # Step 4: Mire detection + detect meridinial points on respective mires
         if (dl_segmentation_flag):
             print("Running segmentation on mask...")
-            # Converting to three channels as expected by segment_mires
-            image_gray_copy = image_gray.copy()
-            image_gray_with_channels = np.dstack((image_gray.copy(), np.dstack((image_gray_copy, image_gray_copy))))
-            # generate mask
-            mire_mask = get_mask(image_gray_with_channels)
-            # dump mask
             image_prefix = image_name.split(".jpg")[0]
-            mask_file_path = self.output + "/" + image_prefix + "/" + image_prefix + "_mire_mask.csv"
-            mire_mask = mire_mask.astype(int)
-            generate_colored_image(mire_mask, self.output + "/" + image_prefix + "/" + image_prefix + "_mire_mask.png")
-            np.savetxt(mask_file_path, mire_mask, delimiter=",", fmt="%d")
+            mask_output_dir = self.output + "/" + image_prefix
+            mire_mask, image_gray_with_channels = detect_mires_mask_dl(image_gray, mask_output_dir)
             # segment mires
-            image_cent_list, image_mp = segment_mires(
+            image_cent_list, image_mp = detect_mires_from_mask(
                 mire_mask,
                 center,
                 self.n_mires,

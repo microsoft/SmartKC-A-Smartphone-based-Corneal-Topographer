@@ -4,6 +4,20 @@ from get_center.get_center import colors_list
 from get_center.get_center import segment_and_get_center
 import os
 
+from utils import generate_colored_image
+
+def detect_mires_mask_dl(image_gray, mask_output_dir):
+    image_gray_copy = image_gray.copy()
+    image_gray_with_channels = np.dstack((image_gray.copy(), np.dstack((image_gray_copy, image_gray_copy))))
+    # generate mask
+    mire_mask = get_mask(image_gray_with_channels)
+    mire_mask = mire_mask.astype(int)
+    #dump mask
+    generate_colored_image(mire_mask, mask_output_dir + "/" + "mire_mask.png")
+    np.savetxt(mask_output_dir + "/" + "mire_mask.csv", mire_mask, delimiter=",", fmt="%d")
+    #return mask and image with channels
+    return mire_mask, image_gray_with_channels
+
 def segmentation_mask_to_radii_field(mask, center, n_mires, num_angles):
     # 'mask' is a WxH image, where each pixel has either a value of 0 if it is a
     # background pixel, or a value of i if it is on the i'th mire.
@@ -195,7 +209,7 @@ def getCentList(radii, n_mires, center, start_angle = 0, end_angle=360, jump = 1
             
     
 
-def segment_mires(mask, center, n_mires, src_image = None, num_angles = 360):
+def detect_mires_from_mask(mask, center, n_mires, src_image = None, num_angles = 360):
     center = (int(center[0]), int(center[1]))
     y, x = np.argwhere(mask == 1)[:,0], np.argwhere(mask == 1)[:,1]
     y, x = np.mean(y), np.mean(x)
