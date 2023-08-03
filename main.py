@@ -134,7 +134,7 @@ parser.add_argument(
     help="Output directory name. If not provided, the current date is used for the directory name.",
 )
 parser.add_argument(
-    "--dl_segmentation",
+    "--dl_mire_detection",
     action='store_true',
     help="Flag to opt for DL based mire detection",
 )
@@ -427,7 +427,7 @@ class corneal_top_gen:
         marked_center = None,
         heuristics_cleanup_flag = True,
         heuristics_bump_cleanup_flag = True,
-        dl_segmentation_flag = True,
+        dl_mire_detection_flag = True,
         gap1_correction = 1
     ):
 
@@ -479,7 +479,7 @@ class corneal_top_gen:
             )
 
         # Step 4: Mire detection + detect meridinial points on respective mires
-        if (dl_segmentation_flag):
+        if (dl_mire_detection_flag):
             print("Running segmentation on mask...")
             image_prefix = image_name.split(".jpg")[0]
             mask_output_dir = self.output + "/" + image_prefix
@@ -713,7 +713,7 @@ if __name__ == "__main__":
                 center_selection=selection_mode,
                 heuristics_cleanup_flag = args.heuristics_cleanup_flag,
                 heuristics_bump_cleanup_flag = args.heuristics_bump_cleanup_flag,
-                dl_segmentation_flag = args.dl_segmentation,
+                dl_mire_detection_flag = args.dl_mire_detection,
                 marked_center=marked_center,
                 gap1_correction = args.gap1_correction
                 )
