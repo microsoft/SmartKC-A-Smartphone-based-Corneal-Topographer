@@ -195,22 +195,25 @@ def clean_points(image_cent_list, image_gray, image_name, center,
     flagged_points = []
     if (heuristics_bump_cleanup_flag):
         _, bump_flagged = bump_cleanup_heuristics(r_pixels, output_folder, image_name)
+        bump_flagged_pair = []
         for mire_number in range(len(bump_flagged)):
             for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
                 if angle in bump_flagged[mire_number]:
                     flagged_points.append((mire_number, angle))
+                    bump_flagged_pair.append((mire_number, angle))
+        plot_path = output_folder+'/'+image_name+'/'+image_name+'_bump_flagged.png'
+        plot_flagged_points(r_pixels, bump_flagged_pair, start_angle, end_angle, jump, plot_path)
         # print(flagged_points, "bump")
         
     if (heuristics_cleanup_flag): 
         _, cleanup_flagged  = cleanup_plots_heuristics(r_pixels, start_angle, end_angle, jump, n_mires, output_folder, image_name)
         flagged_points += cleanup_flagged
+        plot_path = output_folder+'/'+image_name+'/'+image_name+'_cleanup_flagged.png'
+        plot_flagged_points(r_pixels, cleanup_flagged, start_angle, end_angle, jump, plot_path)
     
-    plot_path = output_folder+'/'+image_name+'/'+image_name+'_bump_flagged.png'
-    plot_flagged_points(r_pixels, bump_flagged, start_angle, end_angle, jump, plot_path)
-    plot_path = output_folder+'/'+image_name+'/'+image_name+'_cleanup_flagged.png'
-    plot_flagged_points(r_pixels, cleanup_flagged, start_angle, end_angle, jump, plot_path)
-    plot_path = output_folder+'/'+image_name+'/'+image_name+'_final_flagged.png'
-    plot_flagged_points(r_pixels, flagged_points, start_angle, end_angle, jump, plot_path)
+    if (heuristics_cleanup_flag or heuristics_bump_cleanup_flag):
+        plot_path = output_folder+'/'+image_name+'/'+image_name+'_final_flagged.png'
+        plot_flagged_points(r_pixels, flagged_points, start_angle, end_angle, jump, plot_path)
     
     # uncomment for real image, skip first mire
     r_pixels = r_pixels[1:]
