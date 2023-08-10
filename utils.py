@@ -81,6 +81,8 @@ def plot_color_rb(img, points):
         # for entire set of points (here points are (y,x))
         for mire in range(len(points)):
             for idx, point in enumerate(points[mire]):
+                if (np.isnan(point[0]) or np.isnan(point[1])):
+                    continue
                 img[int(point[0]), int(point[1]), :] = colors_list[mire%15]
     else:
         # for each meridian

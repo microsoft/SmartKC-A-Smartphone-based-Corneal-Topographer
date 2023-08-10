@@ -17,7 +17,7 @@ import csv
 
 # external modules
 from preprocess import preprocess_image
-from mire_detection import process, clean_points, clean_points_support
+from mire_detection import convert_from_image_cent_list_to_radii, process, clean_points, clean_points_support
 from camera_size import get_arc_step_params
 from arc_step_method import arc_step
 from get_maps import *
@@ -306,6 +306,7 @@ class corneal_top_gen:
 
         # Step 5: For each point compute image size on sensor (to calculate slope)
         # store arc_step K
+        # arc_strp_k is a 2D array indexed by angle, mire containing the slope
         arc_step_k = [] # this is for first processing
         relative_points = [] # this is for computation of metrics PPK, KISA, etc.
         for mire in range(len(coords)):
@@ -316,7 +317,13 @@ class corneal_top_gen:
             # get width & height of each point in pixels
             pixels_size = []
             for mire in range(len(coords)):
+                if (mire, idx) in flagged_points:
+                    # TODO: ANURAG: check if this is correct
+                    pixels_size.append([0, 0])
+                    relative_points[mire].append((0, 0))
+                    continue
                 y, x = coords[mire][idx]
+                print("y, x", y, x)
                 obj_width, obj_height = abs(x - center[0]), abs(y - center[1])
                 r_new = (obj_width ** 2 + obj_height ** 2) ** 0.5
                 pixels_size.append([obj_width, obj_height])
@@ -364,6 +371,7 @@ class corneal_top_gen:
 
             # get diametrically opposite angle, uncomment below
             opposite_angle = (angle + 180) % 360
+            print(k, opposite_angle, 'opposite angle')
             assert k[0] == arc_step_k[angle][0], "FATAL ERROR, k_0 angles not equal"
             k[0] = (k[0] + arc_step_k[opposite_angle][0]) / 2.0
 
@@ -483,9 +491,10 @@ class corneal_top_gen:
             print("Running segmentation on mask...")
             image_prefix = image_name.split(".jpg")[0]
             mask_output_dir = self.output + "/" + image_prefix
+            # TODO: Get r_pixels
             mire_mask, image_gray_with_channels = detect_mires_mask_dl(image_gray, mask_output_dir)
             # segment mires
-            image_cent_list, image_mp = detect_mires_from_mask(
+            r_pixels, image_mp = detect_mires_from_mask(
                 mire_mask,
                 center,
                 self.n_mires,
@@ -495,6 +504,8 @@ class corneal_top_gen:
             image_cent_list, center, others = process(
                 image_seg, image_gray, center, self.jump, self.start_angle, self.end_angle
             )
+            r_pixels = convert_from_image_cent_list_to_radii(image_cent_list, center, self.n_mires, self.jump, self.start_angle, self.end_angle)
+            # Convert image_cent_list to r_pixels
             _, _, image_mp = others
 
         # copy the processed images to out
@@ -505,8 +516,9 @@ class corneal_top_gen:
         # plot_highres(image_cent_list, center, self.n_mires, self.jump, self.start_angle, self.end_angle)
 
         # clean points
+        # TODO: Only take r_pixels and not image_cent_list
         r_pixels, flagged_points, coords, image_mp = clean_points(
-            image_cent_list, image_gray.copy(), image_name, center, self.n_mires, self.jump, self.start_angle, self.end_angle, 
+            r_pixels, image_gray.copy(), image_name, center, self.n_mires, self.jump, self.start_angle, self.end_angle, 
             output_folder=self.output, 
             heuristics_cleanup_flag = heuristics_cleanup_flag,
             heuristics_bump_cleanup_flag = heuristics_bump_cleanup_flag

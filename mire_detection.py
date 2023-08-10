@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Author: Siddhartha Gairola (t-sigai at microsoft dot com))
 import logging
+from constants import Constants
 from utils import *
 from scipy.signal import medfilt
 
@@ -156,37 +157,39 @@ def plot_flagged_points(r_pixels, flagged_points, start_angle, end_angle, jump, 
     plt.legend()
     plt.savefig(image_path)
     plt.close()
+    
+def convert_from_image_cent_list_to_radii(image_cent_list, center, n_mires, jump=2, start_angle=0, end_angle=360):
+    r_pixels = []
+    for mire in range(n_mires):
+        r_pixels_temp = []
 
-def clean_points(image_cent_list, image_gray, image_name, center, 
+        # idx here is traversing the angles
+        for idx_angle, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+            if len(image_cent_list[idx_angle]) <= mire:
+                r_pixels_temp.append(Constants.UNKNOWN_RADIUS)
+            else:
+                x, y = image_cent_list[idx_angle][mire][0], image_cent_list[idx_angle][mire][1]
+                r = math.sqrt((center[0]-x)**2 + (center[1]-y)**2)
+                r_pixels_temp.append(r)
+        # append
+        r_pixels.append(r_pixels_temp)
+    return r_pixels
+
+def clean_points(r_pixels, image_gray, image_name, center, 
     n_mires=20, jump=2, start_angle=0, end_angle=360, output_folder="out",
     heuristics_cleanup_flag=True,
     heuristics_bump_cleanup_flag = True):
     
     logging.info("Cleaning ...")
     image_gray = np.dstack((image_gray, np.dstack((image_gray, image_gray))))
-    coords, r_pixels = [], []
     plt.figure()
     for mire in range(n_mires):
-        r_pixels_temp, coords_temp = [], []
-
-        # idx here is traversing the angles
-        for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
-            if len(image_cent_list[idx]) <= mire:
-                r_pixels_temp.append(0)
-                coords_temp.append((-1,-1))
-            else:
-                x, y = image_cent_list[idx][mire][0], image_cent_list[idx][mire][1]
-                r = math.sqrt((center[0]-x)**2 + (center[1]-y)**2)
-                r_pixels_temp.append(r)
-                coords_temp.append((y,x)) # Note: coords is (y,x) rather than (x,y)
-
+        r_pixels_sub = r_pixels[mire]
         # remove outliers using median filtering
-        r_pixels_temp = medfilt_clean(r_pixels_temp)
+        r_pixels[mire] = medfilt_clean(r_pixels_sub)
+        
         # plot radii
-        plt.plot(np.arange(start_angle, end_angle, jump), r_pixels_temp, ls='-', label=str(mire))
-        # append
-        r_pixels.append(r_pixels_temp)
-        coords.append(coords_temp)
+        plt.plot(np.arange(start_angle, end_angle, jump), r_pixels[mire], ls='-', label=str(mire))
 
     plt.legend()
     plt.savefig(output_folder+'/'+image_name+'/plots.png')
@@ -223,6 +226,10 @@ def clean_points(image_cent_list, image_gray, image_name, center,
         coords_temp = []
         for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
             radius = r_pixels[mire][idx]
+            if np.isnan(Constants.UNKNOWN_RADIUS):
+                flagged_points.append((mire, angle))
+                coords_temp.append((Constants.UNKNOWN_COORDINATE, Constants.UNKNOWN_COORDINATE))
+                continue
             x =  center[0] + radius * math.cos(float(angle) * np.pi / 180.0)
             y =  center[1] + radius * math.sin(float(angle) * np.pi / 180.0)
             coords_temp.append((y,x))
@@ -464,7 +471,7 @@ def detect_bumps(segment, threshold=2):
       prev_point_type = point_type
 
   # check if there is a pending bump region after the loop and start index is not None and bump type is not None 
-  if start_index is not None and bump_type is not None:
+  if start_index is not None and bump_type is not None and len(bump_regions) > 1:
     # append a pair of start and end indices and bump type to the list 
     bump_regions.append((org_idx[start_index], org_idx[len(derivative) - 1], bump_type))
 

@@ -110,6 +110,7 @@ def clmi_ppk(curv_map, axial_map, r_2, r_8, center):
 		clmi = m1 - m2
 
 	clmi = clmi*337.5
+	print(clmi, "clmi")
 	ppk = np.exp(-6.4483+2.1319*clmi)/(1+np.exp(-6.4483+2.1319*clmi))
 	ppk, clmi = round(ppk, 2), round(clmi, 2) # rounding off
 	logging.info("PPK: {} CLMI: {} M1: {} M2: {}".format(ppk, clmi, m1, m2))

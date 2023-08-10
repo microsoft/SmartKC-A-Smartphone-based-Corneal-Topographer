@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from constants import Constants
 from get_center.get_center import colors_list
 from get_center.get_center import segment_and_get_center
 import os
@@ -18,7 +19,6 @@ def detect_mires_mask_dl(image_gray, mask_output_dir):
     #return mask and image with channels
     return mire_mask, image_gray_with_channels
 
-def segmentation_mask_to_radii_field(mask, center, n_mires, num_angles):
     # 'mask' is a WxH image, where each pixel has either a value of 0 if it is a
     # background pixel, or a value of i if it is on the i'th mire.
     # 'center' is a tuple (x, y) of the center of the mire pattern.
@@ -83,7 +83,7 @@ def segmentation_mask_to_radii_ray(mask, center, n_mires, num_angles):
     # radius is then the distance from the center to the mid-point of this
     # intersection.
 
-    radii = np.full((n_mires, num_angles), -1)
+    radii = np.full((n_mires, num_angles), Constants.UNKNOWN_RADIUS)
 
     # Compute the distance of each pixel from the center.
     x = np.arange(mask.shape[1]) - center[0]
@@ -127,18 +127,18 @@ def segmentation_mask_to_radii_ray(mask, center, n_mires, num_angles):
                 # This is a pixel on the currently tracking (non-zero) mire.
                 # add this pixel to pixel_indices
                 pixel_indices[y_int, x_int] = True
-                #print(f"HERE1: Found pixel for non zero mire: tracking_mire_index: {tracking_mask_value}, angle_index: {angle_index}, angle: {angle}")
+                #print(f"Found pixel for non zero mire: tracking_mire_index: {tracking_mask_value}, angle_index: {angle_index}, angle: {angle}")
             elif tracking_zero and mask[y_int, x_int] == 0:
                 # This is a pixel on the currently tracking (zero) mire.
                 pixel_indices[y_int, x_int] = True
-                #print(f"HERE2: Found pixel for zero mire: tracking_mire_index: {tracking_mask_value}, angle_index: {angle_index}, angle: {angle}")
+                #print(f"Found pixel for zero mire: tracking_mire_index: {tracking_mask_value}, angle_index: {angle_index}, angle: {angle}")
             elif not tracking_zero and mask[y_int, x_int] == 0:
                 # we have reached the end of the current (non-zero) mire
                 # Commit the current mire to radii
 
                 # Take average of mire_distances of all pixels on the mire and angle
                 if len(distances[pixel_indices]) == 0:
-                    #print(f"HERE3: Found no pixels for non zero mire: tracking_mire_index: {tracking_mask_value}, angle_index: {angle_index}, angle: {angle}")
+                    #print(f"Found no pixels for non zero mire: tracking_mire_index: {tracking_mask_value}, angle_index: {angle_index}, angle: {angle}")
                     count_notfound += 1
                 else:
                     #print(f"mire_index: {mire_index}, angle_index: {angle_index}, angle: {angle}, len(distances[pixel_indices]): {len(distances[pixel_indices])}")
@@ -188,8 +188,9 @@ def plot_mire_points_on_image(img, radii, center, n_mires, num_angles):
         for angle_index in range(num_angles):
             angle = angle_index * 2 * np.pi / num_angles
             radius = radii[mire_index][angle_index]
-            if radius == -1:
+            if np.isnan(radius):
                 continue
+            print(radius, angle, np.isnan(radius), 'radius, angle')
             x = int(center[0] + radius * np.cos(angle))
             y = int(center[1] + radius * np.sin(angle))
             #print(f"mire_index: {mire_index}, angle_index: {angle_index}, angle: {angle}, radius: {radius}, x: {x}, y: {y}, img[y, x]: {img[y, x]}")
@@ -219,8 +220,8 @@ def detect_mires_from_mask(mask, center, n_mires, src_image = None, num_angles =
     # Only plot if src image path is provided
     overlay_image = plot_mire_points_on_image(src_image, radii, center, n_mires, num_angles)
     
-    image_cent_list = getCentList(radii, n_mires, center)
-    return image_cent_list, overlay_image
+    # image_cent_list = getCentList(radii, n_mires, center)
+    return radii, overlay_image
 
 def get_mask(cropped_img):
     script_dir = os.path.dirname(__file__)
