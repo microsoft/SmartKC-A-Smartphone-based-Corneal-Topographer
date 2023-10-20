@@ -8,20 +8,28 @@ import logging
 from datetime import date
 import numpy as np
 import matplotlib.ticker as ticker
+import pandas as pd
+
+from mire_detection_dl import detect_mires_from_mask
+from arc_step_method import arc_step_method
+from segment_mires import mire_segmentation
 
 np.set_printoptions(threshold=np.inf)
 import argparse
 import csv
 
+import warnings
+warnings.filterwarnings("ignore")
+
 # external modules
 from preprocess import preprocess_image
-from mire_detection import process, clean_points, clean_points_support
-from camera_size import get_arc_step_params
-from arc_step_method import arc_step
+from mire_detection import detect_mires_img_proc, clean_points
 from get_maps import *
 from utils import *
 from metrics import *
 from zernike_smartkc import RZern
+from mire_detection_graph import detect_mires_from_graph
+from constants import Constants
 
 # command line arguments (if any)
 parser = argparse.ArgumentParser(description="KT Processing Pipeline")
@@ -43,16 +51,20 @@ parser.add_argument("--jump",
 )
 parser.add_argument(
     "--n_mires", 
-    default=None, 
+    default=22, 
     type=int, 
     help="Number of mires to process",
 )
+
+# TODO - Change to placido_length
 parser.add_argument(
     "--working_distance",
     default=75.0,
     type=float,
     help="Distance of cone end from cornea",
 )
+# TODO - Add argument to input total working distance : argname : working_distance
+
 parser.add_argument(
     "--camera_params",
     default=None,
@@ -77,26 +89,7 @@ parser.add_argument(
     type=str, 
     help="Test input image.",
 )
-parser.add_argument(
-    "--upsample", 
-    default=1, 
-    type=int, 
-    help="Increase resolution of input image.",
-)
-parser.add_argument(
-    "--gap1",
-    default=-3,
-    type=float,
-    help="Accounting for gap (in mm) between eye and largest ring.",
-)
-# Current gap1 computation seems to underpredict working distance (resulting in underpredicting simK values)
-# Emprirical evidence suggests that increasing it by 30% (for gap2=4) yield good results.
-parser.add_argument(
-    "--gap1_correction",
-    default=1.3,
-    type=float,
-    help="Correcting gap1 by a factor.",
-)
+
 parser.add_argument(
     "--gap2",
     default=4,
@@ -108,16 +101,6 @@ parser.add_argument(
     default="default",
     type=str,
     help="Flag for setting mode for center selection (auto or manual-pc or manual-app)",
-)
-parser.add_argument(
-    "--heuristics_cleanup_flag",
-    action='store_true',
-    help="Flag to run heuristics based cleanup of mire points",
-)
-parser.add_argument(
-    "--heuristics_bump_cleanup_flag",
-    action='store_true',
-    help="Flag to run heuristics based bump cleanup of mire points",
 )
 parser.add_argument(
     "--centers_filename",
@@ -132,6 +115,42 @@ parser.add_argument(
     help="Output directory name. If not provided, the current date is used for the directory name.",
 )
 
+parser.add_argument(
+    "--zernike_degree",
+    default=8,
+    type=int,
+    help="Degree of the zernike polynomial used to fit the corneal surface"
+)
+
+parser.add_argument(
+    "--mire_seg_method",
+    choices=Constants.MIRE_SEGMENTATION_METHODS,
+    required=True,
+    help="Method used to segment mires",
+)
+
+parser.add_argument(
+    "--mire_loc_method",
+    choices=Constants.MIRE_LOCALIZATION_METHODS,
+    required=True,
+    help="Method used to locate mire points",
+)
+
+parser.add_argument(
+    "--verbose",
+    action="store_true",
+    default=False,
+    help="Flag to enable verbose logging",
+)
+
+def plot_and_save_corneal_surface(x, y, z, output, save = True):
+    df = pd.DataFrame({"x": x, "y": y, "z": z})
+    df.to_csv(output + "corneal_surface.csv", index=False)
+    plt.figure()
+    ax = plt.axes(projection = '3d')
+    ax.scatter3D(x, y, z)
+    plt.savefig(output + "corneal_surface_3d.png")
+    plt.close()
 
 class corneal_top_gen:
 
@@ -149,11 +168,11 @@ class corneal_top_gen:
         self.ups = upsample # if the image has to be upsampled or not
         self.n_mires = n_mires # number of mires to process
         self.zernike_degree = zernike_degree # degree of the zernike polynomial used for fitting
-        self.test_name = test_name
+        self.output = test_name
     
     # to handle different phones with different intrinsic camera params
     # TODO: Replace f_gap1_wrapper with f_gap1 in the code below
-    def f_gap1_wrapper(f_gap1, mire_radius, base_focal_length, base_res_width, base_sensor_width, current_res_width):
+    def f_gap1_wrapper(self, f_gap1, mire_radius, base_focal_length, base_res_width, base_sensor_width, current_res_width):
         f_base_f_curr = base_focal_length/self.sensor_dims[2]
         base_r_w_base_s_w = base_res_width/base_sensor_width
         mire_radius = (mire_radius/current_res_width*self.sensor_dims[0])*f_base_f_curr*base_r_w_base_s_w
@@ -279,13 +298,13 @@ class corneal_top_gen:
             )
 
             # compute KISA score
-            KISA(
-                k1_raw.copy(),
-                (k1_raw.shape[1] // 2, k1_raw.shape[0] // 2),
-                relative_points,
-                r_3,
-                diff,
-            )
+            # KISA(
+            #     k1_raw.copy(),
+            #     (k1_raw.shape[1] // 2, k1_raw.shape[0] // 2),
+            #     relative_points,
+            #     r_3,
+            #     diff,
+            # )
 
             #KISA(k2_raw, (k2_raw.shape[1]//2, k2_raw.shape[0]//2), relative_points, r_3, diff)
             #compute_tilt_factor(k1_raw.copy(), tan_map.copy(), r_1, r_3_5, (k1_raw.shape[1]//2, k1_raw.shape[0]//2), angle_k1, image_name)
@@ -294,140 +313,17 @@ class corneal_top_gen:
 
         return error, tan_map, axial_map, sim_k1, sim_k2, round(-angle_k1 * 180 / np.pi, 1), average_k, diff, ppk
 
-    def run_arc_step_gen_maps(self, image_seg, image_name, center, coords, h, w, err1=0, err2=0, flagged_points = []):
-        blank = np.full((image_seg.shape[0], image_seg.shape[1]), -1e6, dtype="float64")
-        elevation, error_map = blank.copy(), blank.copy()
-
-        # Step 5: For each point compute image size on sensor (to calculate slope)
-        # store arc_step K
-        arc_step_k = [] # this is for first processing
-        relative_points = [] # this is for computation of metrics PPK, KISA, etc.
-        for mire in range(len(coords)):
-            relative_points.append([])
-
-        # get arc-step parameters for processing further (first processing)
-        for idx, angle in enumerate(np.arange(self.start_angle, self.end_angle, self.jump)):
-            # get width & height of each point in pixels
-            pixels_size = []
-            for mire in range(len(coords)):
-                y, x = coords[mire][idx]
-                obj_width, obj_height = abs(x - center[0]), abs(y - center[1])
-                r_new = (obj_width ** 2 + obj_height ** 2) ** 0.5
-                pixels_size.append([obj_width, obj_height])
-                relative_points[mire].append((y - center[1], x - center[0]))
-
-            k, oz, oy = get_arc_step_params(
-                pixels_size,
-                w,
-                h,
-                self.sensor_dims,
-                self.f_len,
-                self.working_distance + err1,
-                self.model_file,
-                mid_point=True,
-            )
-            arc_step_k.append(k)
-
-        max_r = -1
-        three_d_points = []
-        plot_x, plot_y, plot_z = [], [], []
-        # traverse each meridian and run arc-step for each meridian
-        for idx, angle in enumerate(np.arange(self.start_angle, self.end_angle, self.jump)):
-            # get width & height of each point in pixels
-            pixels_size = []
-            for mire in range(len(coords)):
-                y, x = coords[mire][idx]
-                obj_width, obj_height = abs(x - center[0]), abs(y - center[1])
-                r_new = (obj_width ** 2 + obj_height ** 2) ** 0.5
-                max_r = max(r_new, max_r)
-                pixels_size.append([obj_width, obj_height])
-
-            # Step 6: Fetch Real World coordinates & parameters for Arc-Step Method
-            # mid_point=True for when mid points of rings used instead of edges,
-            # else mid_point=False
-            k, oz, oy = get_arc_step_params(
-                pixels_size,
-                w,
-                h,
-                self.sensor_dims,
-                self.f_len,
-                self.working_distance + err1,
-                self.model_file,
-                mid_point=True,
-            )
-
-            # get diametrically opposite angle, uncomment below
-            opposite_angle = (angle + 180) % 360
-            assert k[0] == arc_step_k[angle][0], "FATAL ERROR, k_0 angles not equal"
-            k[0] = (k[0] + arc_step_k[opposite_angle][0]) / 2.0
-
-            # Step 7: Run arc step method
-            # Output => Tangential Map
-            zone = check_angle(angle, self.skip_angles)
-            if zone == 1 or zone == 3:
-                continue
-            try:
-                rocs, zs, ys = arc_step(
-                    len(k) - 1, -(self.working_distance + err1 + err2), oz, oy, k
-                )
-            except:
-                continue
-
-            # put radius value in blank image and run regression
-            for mire in range(len(coords)):
-                y, x = coords[mire][idx]
-                blank[int(y), int(x)] = rocs[mire + 1]
-                elevation[int(y), int(x)] = zs[mire + 1]
-
-            # get 3d points
-            angle_three_d_points = []
-            for mire in range(len(coords)):
-                if (mire, angle) in flagged_points:
-                    continue
-                x, y, z = get_three_d_points(ys[mire + 1], zs[mire + 1], angle)
-                angle_three_d_points.append((x, y, z))
-                plot_x.append(x); plot_y.append(y); plot_z.append(z);
-            three_d_points.append(angle_three_d_points)
-
-        # convert plot_x/y/z to numpy arrays
-        plot_x.append(0.0); plot_y.append(0.0); plot_z.append(0.0);
-        number_of_points = len(plot_x)
-        plot_x = np.array(plot_x).reshape((number_of_points, 1))
-        plot_y = np.array(plot_y).reshape((number_of_points, 1))
-        plot_z = np.array(plot_z).reshape((number_of_points, 1))
-
-        # normalize plot_x & plot_y by rho
-        rho = np.sqrt(np.square(plot_x) + np.square(plot_y))
-        xy_norm = rho.max()
-        plot_x, plot_y = plot_x / xy_norm, plot_y / xy_norm
-
-        # grid for the final map
-        max_r = (max_r // 2) * 2
-        ddx = np.linspace(-1.0, 1.0, int(2 * max_r))
-        ddy = np.linspace(-1.0, 1.0, int(2 * max_r))
-        xv, yv = np.meshgrid(ddx, ddy)
-
-        error, tan_map, axial_map, sim_k1, sim_k2, angle, average_k, diff, ppk = self.zernike_smoothening(image_name, plot_x, plot_y, plot_z, 
-            xy_norm, xv, yv, max_r, relative_points)
-
-        return error, tan_map, axial_map, [sim_k1, sim_k2, angle, average_k, diff, ppk]
 
     # main runner function to generate topography maps from input image
     def generate_topography_maps(
-        self, base_dir, image_name, crop_dims=(1200,1200), iso_dims=500, 
-        center=(-1, -1), downsample=False, blur=True, upsample=None,
-        err1=[0], err2=[0], skip_angles=[[-1, -1], [-1, -1]],
+        self, base_dir, image_name, mire_seg_method, mire_loc_method, crop_dims=(1200,1200), iso_dims=500, 
+        center=(-1, -1), upsample=None,
+        err2=0, skip_angles=[[-1, -1], [-1, -1]],
         center_selection="auto",
         marked_center = None,
-        heuristics_cleanup_flag = True,
-        heuristics_bump_cleanup_flag = True,
-        gap1_correction = 1
     ):
-
-        self.output = self.test_name
         self.skip_angles = skip_angles
-
-        
+  
         # create output directory if not present
         if not os.path.isdir(self.output):
             os.mkdir(self.output)
@@ -444,147 +340,168 @@ class corneal_top_gen:
         # 1 Using center of central mire, or
         # 2 Centroid of Segmented Image (compute it's center of mass)
         # 3 User selects center manually if center = (-1, -1)
-        image_gray, image_seg, image_edge, center, iris_pix_dia = preprocess_image(
+        image_gray, center = preprocess_image(
             base_dir,
             image_name,
             center,
-            downsample=downsample,
-            blur=blur,
             crop_dims=crop_dims,
             iso_dims=iso_dims,
             output_folder=self.output,
-            filter_radius=10,
             center_selection=center_selection,
             marked_center=marked_center
         )
-        
-        #cv2.imwrite(os.path.dirname(__file__)+"_gray.png", image_gray)
-        #cv2.imwrite(os.path.dirname(__file__)+"_seg.png", image_seg)
-        #cv2.imwrite(os.path.dirname(__file__)+"_edge.png", image_edge)
 
-        if upsample is not None:
-            self.ups = upsample
-
-        # upsample image to higher resolution
-        if self.ups > 1:
+        mire_seg = mire_segmentation(mire_seg_method, center, Constants.DL_MODEL_FILE)
+        image_seg, image_edge = mire_seg.segment_mires(image_gray)
+            # upsample image to higher resolution
+        if mire_seg_method == Constants.IMG_PROC_MIRE_SEG and self.ups > 1:
             image_gray, image_seg, image_edge, center = increase_res(
                 image_gray, image_seg, image_edge, center, self.ups, image_name.split(".jpg")[0]
             )
 
-        # Step 4: Mire detection + detect meridinial points on respective mires
-        image_cent_list, center, others = process(
-            image_seg, image_gray, center, self.jump, self.start_angle, self.end_angle
-        )
-        _, _, image_mp = others
-
-        # copy the processed images to out
         image_name = image_name.split(".jpg")[0]
-        cv2.imwrite(self.output+"/" + image_name + "/" + image_name + "_mp.png", image_mp)
+        cv2.imwrite(self.output + "/" + image_name + "/" + image_name + "_seg.png", convert_to_binary(image_seg))
 
-        # plot points (uncomment to display plots)
-        # plot_highres(image_cent_list, center, self.n_mires, self.jump, self.start_angle, self.end_angle)
+        # Step 4: Mire detection + detect meridinial points on respective mires
+        if mire_loc_method == Constants.RADIAL_SCAN_LOC_METHOD:
+            if mire_seg_method == Constants.IMG_PROC_MIRE_SEG:
+                image_cent_list, center, others = detect_mires_img_proc(
+                    image_seg, image_gray, center, self.jump, self.start_angle, self.end_angle
+                )
+            elif mire_seg_method == Constants.DL_MIRE_SEG:
+                image_cent_list, image_mp = detect_mires_from_mask(
+                    image_seg,
+                    center,
+                    self.n_mires,
+                    np.dstack((image_gray, np.dstack((image_gray, image_gray))))
+                )
+            else:
+                raise ValueError("Invalid mire segmentation method")
+        elif mire_loc_method == Constants.GRAPH_CLUSTER_LOC_METHOD:
+            if mire_seg_method == Constants.DL_MIRE_SEG:
+                image_seg = convert_to_binary(image_seg)
+            image_cent_list, image_mp = detect_mires_from_graph().fetch_mire_points(image_gray, image_seg, center, self.n_mires, self.start_angle, self.end_angle, self.jump, self.output + "/" + image_name + "/")            
+        else:
+            raise ValueError("Invalid mire localization method")
+
+        # image_name = image_name.split(".jpg")[0]
+
+        # cv2.imwrite(self.output+"/" + image_name + "/" + image_name + "_mp.png", image_mp)
 
         # clean points
+        # TODO: Only take r_pixels and not image_cent_list
         r_pixels, flagged_points, coords, image_mp = clean_points(
-            image_cent_list, image_gray.copy(), image_name, center, self.n_mires, self.jump, self.start_angle, self.end_angle, 
+            image_cent_list, image_gray.copy(), image_name, center, mire_loc_method, self.n_mires, self.jump, self.start_angle, self.end_angle, 
             output_folder=self.output, 
-            heuristics_cleanup_flag = heuristics_cleanup_flag,
-            heuristics_bump_cleanup_flag = heuristics_bump_cleanup_flag
         )
-        #cv2.imwrite(os.path.dirname(__file__)+"_mp.png", image_mp)
-        #r_pixels, coords = clean_points_support(image_cent_list, image_gray.copy(), image_name, 
-        #    center, n_mires, jump, start_angle, end_angle, skip_angles=skip_angles, output_folder=self.output) 
 
-        mire_20_radius = np.mean(r_pixels[20][15:330])*2.0
+        mire_20_radii = [r_pixels[20][i] for i in range(self.start_angle, self.end_angle, self.jump) if (20, i) not in flagged_points]
+
+        max_r = np.nanmax(mire_20_radii)
+        min_r = np.nanmin(mire_20_radii)
+        mire_20_radius = (2*max_r + min_r)/3.0 * 2
+        print(f"Mire 20 radius - {mire_20_radius}")
+
+        # mire_20_radius = np.nanmean(r_pixels[20][15:330])*2.0
         if self.f_gap1 is not None:
-            err1 = [self.f_gap1(1/mire_20_radius)]
-            err1 = [round(err1[0]*gap1_correction, 2)]
+            err1 = self.f_gap1(1/mire_20_radius)
 
         # get image real dimensions, account for upsampling
         h, w = cv2.imread(base_dir + "/" + image_name + ".jpg").shape[:2]
         h, w = self.ups * h, self.ups * w 
-        #h, w = 8000, 6000 # just hard coding for now
         
         errors = []
         # Steps 5, 6 & 7
-        for e1 in err1:
-            for e2 in err2:
-                error, tan_map, axial_map, sims = self.run_arc_step_gen_maps(
-                    image_seg, image_name, center, coords, h, w, err1=e1, err2=e2, flagged_points=flagged_points
-                )
-                errors.append(error)
+        logging.info(f"Effective Working distance = {self.working_distance + err1 + err2}")                
+        if mire_loc_method == Constants.RADIAL_SCAN_LOC_METHOD:
+            assert flagged_points == [], "Flagged points not empty"
+        arc_step = arc_step_method(self.model_file, self.start_angle, self.end_angle, self.jump, self.skip_angles)
+        x, y, z, xy_norm, max_radius, relative_points= arc_step.run( 
+            image_seg, image_name, center, r_pixels, coords, h, w, self.working_distance, self.sensor_dims, self.f_len, err1, err2, flagged_points, self.n_mires - 1)
 
-                # overlay on gray image
-                image_overlay = np.dstack((image_gray, np.dstack((image_gray, image_gray)))).astype(np.uint8)
-                temp_map = np.zeros_like(image_overlay)
-                # get tangential map overlay
-                temp_map[
-                    center[1] - tan_map.shape[0] // 2 : center[1] + tan_map.shape[0] // 2,
-                    center[0] - tan_map.shape[1] // 2 : center[0] + tan_map.shape[1] // 2,
-                    :] = tan_map
-                tan_map = temp_map.copy()
-                # get axial map overlay
-                temp_map = np.zeros_like(image_overlay)
-                temp_map[
-                    center[1] - axial_map.shape[0] // 2 : center[1] + axial_map.shape[0] // 2,
-                    center[0] - axial_map.shape[1] // 2 : center[0] + axial_map.shape[1] // 2,
-                    :] = axial_map
-                axial_map = temp_map.copy()
+        plot_and_save_corneal_surface(x,y,z,self.output + "/" + image_name + '/', save = True)
 
-                mask = axial_map[:, :, 0] > 0
-                image_overlay[mask] = [0, 0, 0]
-                tan_map_overlay = image_overlay + tan_map
-                axial_map_overlay = image_overlay + axial_map
+        ddx = np.linspace(-1.0, 1.0, int(2 * max_radius))
+        ddy = np.linspace(-1.0, 1.0, int(2 * max_radius))
+        xv, yv = np.meshgrid(ddx, ddy)
 
-                with open(self.output + "/result_simK.csv", "a") as f:
-                    f.write(image_name + "," + str(sims[0]) + "," + str(sims[1]) + "," + str(sims[2]) + "\n")
+        logging.info("Arc-step complete, running zernike smoothening")
+        error, tan_map, axial_map, sim_k1, sim_k2, angle, average_k, diff, ppk = self.zernike_smoothening(
+            image_name, x, y, z, xy_norm, xv, yv, max_radius, relative_points)                    
+        sims = [sim_k1, sim_k2, angle, average_k, diff, ppk]
 
-                cv2.putText(
-                    tan_map_overlay,
-                    "Sim K1: "+ str(sims[0])+ "D @"+ str(sims[2])+ " K2: "+ str(sims[1])+ "D @"+ str(sims[2] + 90),
-                    (5, 20),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (255, 255, 255),
-                    2,
-                )
-                cv2.putText(tan_map_overlay,
-                    "Avg: " + str(sims[3]) + "D Diff: " + str(sims[4]) + "D",
-                    (5, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (255, 255, 255),
-                    2,
-                )
-                cv2.putText(
-                    axial_map_overlay,
-                    "Sim K1: "+ str(sims[0]) + "D @" + str(sims[2]) + " K2: "+ str(sims[1])+ "D @"+ str(sims[2] + 90),
-                    (5, 20),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (255, 255, 255),
-                    2,
-                )
-                cv2.putText(
-                    axial_map_overlay,
-                    "Avg: " + str(sims[3]) + "D Diff: " + str(sims[4]) + "D",
-                    (5, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (255, 255, 255),
-                    2,
-                )
+        # overlay on gray image
+        image_overlay = np.dstack((image_gray, np.dstack((image_gray, image_gray)))).astype(np.uint8)
+        temp_map = np.zeros_like(image_overlay)
+        # get tangential map overlay
+        # TODO - Figure out why a (% 2) is needed here
+        temp_map[
+            center[1] - tan_map.shape[0] // 2 : center[1] + tan_map.shape[0] // 2 + tan_map.shape[0] % 2,
+            center[0] - tan_map.shape[1] // 2 : center[0] + tan_map.shape[1] // 2 + tan_map.shape[1] % 2,
+            :] = tan_map
+        tan_map = temp_map.copy()
+        # get axial map overlay
+        temp_map = np.zeros_like(image_overlay)
+        temp_map[
+            center[1] - axial_map.shape[0] // 2 : center[1] + axial_map.shape[0] // 2 + axial_map.shape[0] % 2,
+            center[0] - axial_map.shape[1] // 2 : center[0] + axial_map.shape[1] // 2 + axial_map.shape[1] % 2,
+            :] = axial_map
+        axial_map = temp_map.copy()
 
-            
-                cv2.imwrite(
-                    self.output+"/" + image_name + "/" + image_name + "_tan_map_overlay.png",
-                    tan_map_overlay,
-                )
-                cv2.imwrite(
-                    self.output+"/" + image_name + "/" + image_name + "_axial_map_overlay.png",
-                    axial_map_overlay,
-                )
-            
+        mask = axial_map[:, :, 0] > 0
+        image_overlay[mask] = [0, 0, 0]
+        tan_map_overlay = image_overlay + tan_map
+        axial_map_overlay = image_overlay + axial_map
+
+        with open(self.output + f"/{mire_seg_method}_{mire_loc_method}_simk.csv", "a") as f:
+            f.write(image_name + "," + str(sims[0]) + "," + str(sims[1]) + "," + str(sims[2]) + "," + str(self.working_distance + err1 + err2) + "\n")
+
+        cv2.putText(
+            tan_map_overlay,
+            "Sim K1: "+ str(sims[0])+ "D @"+ str(sims[2])+ " K2: "+ str(sims[1])+ "D @"+ str(sims[2] + 90),
+            (5, 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (255, 255, 255),
+            2,
+        )
+        cv2.putText(tan_map_overlay,
+            "Avg: " + str(sims[3]) + "D Diff: " + str(sims[4]) + "D",
+            (5, 40),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (255, 255, 255),
+            2,
+        )
+        cv2.putText(
+            axial_map_overlay,
+            "Sim K1: "+ str(sims[0]) + "D @" + str(sims[2]) + " K2: "+ str(sims[1])+ "D @"+ str(sims[2] + 90),
+            (5, 20),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (255, 255, 255),
+            2,
+        )
+        cv2.putText(
+            axial_map_overlay,
+            "Avg: " + str(sims[3]) + "D Diff: " + str(sims[4]) + "D",
+            (5, 40),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (255, 255, 255),
+            2,
+        )
+
+    
+        cv2.imwrite(
+            self.output+"/" + image_name + "/" + image_name + "_tan_map_overlay.png",
+            tan_map_overlay,
+        )
+        cv2.imwrite(
+            self.output+"/" + image_name + "/" + image_name + "_axial_map_overlay.png",
+            axial_map_overlay,
+        )
+    
         logging.warning("Test Complete!")
         return errors, sims, [image_gray, image_seg, image_mp, tan_map_overlay, axial_map_overlay]
 
@@ -599,6 +516,9 @@ def read_center(center_filename, image_name):
 if __name__ == "__main__":
     # parsing arguments
     args = parser.parse_args()
+    # Default config - WARNING
+    if args.verbose:
+        logging.basicConfig(level=logging.INFO)
 
     # getting parameters for corneal_top_obj
     f_inv_20 = None
@@ -608,6 +528,8 @@ if __name__ == "__main__":
         f_inv_20 = np.poly1d([3617.81645183, -17.2737687]) # 4 mm gap2, mire_21, id_20
     elif args.gap2 == 5:
         f_inv_20 = np.poly1d([3583.52156815, -17.31674123]) # 5 mm gap2, mire_21, id_20
+
+    # fetch camera parameters
     sensor_dims = None
     f_len = None
     if (args.camera_params is not None):
@@ -621,11 +543,9 @@ if __name__ == "__main__":
     base_dir = args.base_dir  # base directory
     skip_angles = [[-1, -1], [-1, -1]]
     center = (-1, -1)
-    # image_name = "nokc_eye_1.jpg"
 
     # call function to run pipeline and generate_topography_maps
     # expects image to be in .jpg format
-    
     to_process = list(filter(lambda name: name.endswith('.jpg'), os.listdir(base_dir)))
     failed = set()
     execution_order = []
@@ -642,7 +562,6 @@ if __name__ == "__main__":
         output_dir = date.today().strftime("%d_%m_%Y")
     else:
         output_dir = args.output_dir
-    # print("Output directory: ", output_dir)
     
     for selection_mode in execution_order:
         while len(to_process):
@@ -657,7 +576,6 @@ if __name__ == "__main__":
                 marked_center = None
                 
                 # Open only if csv available
-                # print(csv_file_path, "CSV_FILE_PATH")
                 if (os.path.exists(csv_file_path)):
                     # try to read values
                     with open(csv_file_path, newline='') as csvfile:
@@ -671,30 +589,26 @@ if __name__ == "__main__":
                                 marked_center = list(map(float, row['marked_center'].split('|')))
                                 break
                 
-                # print(marked_center, "MARKED_CENTER")
                 if args.centers_filename is not None:
                     center = read_center(base_dir+args.centers_filename, filename)
+
                 # create the corneal_top_gen class object
                 corneal_top_obj = corneal_top_gen(
                     args.model_file, args.working_distance, sensor_dims, 
                     f_len, args.start_angle, args.end_angle, args.jump, 
-                    args.upsample, args.n_mires, f_inv_20, output_dir,
+                    Constants.IMG_PROC_SEG_PARAMS["UPSAMPLE"], args.n_mires, f_inv_20, output_dir, zernike_degree=[args.zernike_degree],
                     )
                 
                 # TODO: Clean up such that only one center is passed
                 corneal_top_obj.generate_topography_maps(
                 base_dir,
                 filename,
+                args.mire_seg_method,
+                args.mire_loc_method,
                 center=center,
-                downsample=True,
-                blur=True,
-                err1=[args.gap1],
-                err2=[args.gap2],
+                err2=args.gap2,
                 center_selection=selection_mode,
-                heuristics_cleanup_flag = args.heuristics_cleanup_flag,
-                heuristics_bump_cleanup_flag = args.heuristics_bump_cleanup_flag,
                 marked_center=marked_center,
-                gap1_correction = args.gap1_correction
                 )
             except Exception as e:
                 traceback.print_exc()
