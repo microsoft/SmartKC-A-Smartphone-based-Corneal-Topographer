@@ -360,7 +360,7 @@ class corneal_top_gen:
             )
 
         image_name = image_name.split(".jpg")[0]
-        cv2.imwrite(self.output + "/" + image_name + "/" + image_name + "_seg.png", convert_to_binary(image_seg))
+        cv2.imwrite(self.output + "/" + image_name + "/" + image_name + "_seg.png", convert_to_binary(image_seg.copy()))
 
         # Step 4: Mire detection + detect meridinial points on respective mires
         if mire_loc_method == Constants.RADIAL_SCAN_LOC_METHOD:
@@ -389,7 +389,6 @@ class corneal_top_gen:
         # cv2.imwrite(self.output+"/" + image_name + "/" + image_name + "_mp.png", image_mp)
 
         # clean points
-        # TODO: Only take r_pixels and not image_cent_list
         r_pixels, flagged_points, coords, image_mp = clean_points(
             image_cent_list, image_gray.copy(), image_name, center, mire_loc_method, self.n_mires, self.jump, self.start_angle, self.end_angle, 
             output_folder=self.output, 
@@ -400,7 +399,7 @@ class corneal_top_gen:
         max_r = np.nanmax(mire_20_radii)
         min_r = np.nanmin(mire_20_radii)
         mire_20_radius = (2*max_r + min_r)/3.0 * 2
-        print(f"Mire 20 radius - {mire_20_radius}")
+        logging.info(f"Mire 20 radius - {mire_20_radius}")
 
         # mire_20_radius = np.nanmean(r_pixels[20][15:330])*2.0
         if self.f_gap1 is not None:
