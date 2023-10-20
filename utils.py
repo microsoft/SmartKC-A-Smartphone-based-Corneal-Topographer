@@ -9,6 +9,7 @@ from matplotlib import cm as __cm__
 from matplotlib.ticker import LinearLocator as __LinearLocator__
 from matplotlib.ticker import FormatStrFormatter as __FormatStrFormatter__
 from PIL import Image
+from constants import Constants
 
 colors_list = [
 [0,0,255],
@@ -75,17 +76,23 @@ def check_angle(angle, skip_angles):
 def get_dist(p1, p2):
     return math.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
-def plot_color_rb(img, points):
+def plot_color_rb(img, points, flagged_points = []):
 
     if len(points[0]) > 3:
         # for entire set of points (here points are (y,x))
         for mire in range(len(points)):
             for idx, point in enumerate(points[mire]):
+                if np.isnan(point[0]) or np.isnan(point[1]):
+                    continue
+                if (mire, idx) in flagged_points:
+                    continue
                 img[int(point[0]), int(point[1]), :] = colors_list[mire%15]
     else:
         # for each meridian
         # initially points were (x,y)
         for idx, point in enumerate(points):
+            if np.isnan(point[0]) or np.isnan(point[1]):
+                continue
             if idx%2 == 0:
                 img[int(point[1]), int(point[0]), :] = [0, 255, 255] # yellow
             else:
@@ -262,3 +269,34 @@ def generate_colored_image(mires, out_path):
     # Create an image from the array and save it as a PNG
     image = Image.fromarray(image_array)
     image.save(out_path)
+
+# convert instance segmentation mask to binary mask, and invert mask
+def convert_to_binary(mire_mask, negative_image = True):
+    mire_mask[mire_mask!=0] = 1
+    mire_mask *= 255
+    if negative_image:
+        mire_mask = 255 - mire_mask
+    mire_mask = mire_mask.astype(np.uint8)
+    return mire_mask
+
+def median_filter_with_nans(data, win1, win2):
+    prefix1 = data[-(win1 // 2):]
+    suffix1 = data[:win1 // 2]
+
+    prefix2 = data[-(win2 // 2):]
+    suffix2 = data[:win2 // 2]
+
+    data_win1 = np.concatenate((prefix1, data, suffix1))
+    data_win2 = np.concatenate((prefix2, data, suffix2))
+
+    filter_1 = np.nanmedian(np.lib.stride_tricks.sliding_window_view(data_win1, win1), axis=1)
+    filter_2 = np.nanmedian(np.lib.stride_tricks.sliding_window_view(data_win2, win2), axis=1)
+
+    diff = np.abs(filter_1-filter_2)/(filter_2+1e-9)
+
+    for idx in range(len(filter_1)):
+        if diff[idx] > 0.05: # cut off is manually set at 5%
+            filter_1[idx] = filter_2[idx]
+    
+    return filter_1
+
