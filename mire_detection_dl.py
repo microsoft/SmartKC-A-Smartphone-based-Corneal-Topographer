@@ -179,6 +179,12 @@ def segmentation_mask_to_radii_ray(mask, center, n_mires, num_angles):
 
 
     # print(f"count_found: {count_found}, count_notfound: {count_notfound}")
+    # TODO - Use nan instead of -1
+    for i in range(n_mires):
+        idx = radii[i] == -1
+        mask = ~idx
+        mean = sum(radii[i][mask])/len(radii[i][mask])
+        radii[i][np.argwhere(idx)] = mean
     return radii
 
 
@@ -204,7 +210,7 @@ def getCentList(radii, n_mires, center, start_angle = 0, end_angle=360, jump = 1
     for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
         for mire_index in range(n_mires):
             radius = radii[mire_index][idx]
-            image_cent_list[idx][mire_index] = (int(center[0] + radius * np.cos(angle)), int(center[1] + radius * np.sin(angle)))
+            image_cent_list[idx][mire_index] = (int(center[0] + radius * np.cos(angle)), int(center[1] + radius * np.sin(angle)), radius)
     return image_cent_list
             
     
