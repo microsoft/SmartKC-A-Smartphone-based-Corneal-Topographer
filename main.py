@@ -389,7 +389,6 @@ class corneal_top_gen:
         # cv2.imwrite(self.output+"/" + image_name + "/" + image_name + "_mp.png", image_mp)
 
         # clean points
-        # TODO - Check if heuristics are needed for traditional Img Proc
         r_pixels, flagged_points, coords, image_mp = clean_points(
             image_cent_list, image_gray.copy(), image_name, center, mire_loc_method, self.n_mires, self.jump, self.start_angle, self.end_angle, 
             output_folder=self.output, 
