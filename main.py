@@ -427,6 +427,7 @@ class corneal_top_gen:
         logging.info("Arc-step complete, running zernike smoothening")
         error, tan_map, axial_map, sim_k1, sim_k2, angle, average_k, diff, ppk = self.zernike_smoothening(
             image_name, x, y, z, xy_norm, xv, yv, max_radius, relative_points)                    
+        angle = angle + 180
         sims = [sim_k1, sim_k2, angle, average_k, diff, ppk]
 
         # overlay on gray image
@@ -457,7 +458,7 @@ class corneal_top_gen:
 
         cv2.putText(
             tan_map_overlay,
-            "Sim K1: "+ str(sims[0])+ "D @"+ str(sims[2])+ " K2: "+ str(sims[1])+ "D @"+ str(sims[2] + 90),
+            "Sim K1: "+ str(sims[0])+ "D @"+ str(sims[2])+ " K2: "+ str(sims[1])+ "D @"+ str((sims[2] + 90) % 180),
             (5, 20),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
@@ -474,7 +475,7 @@ class corneal_top_gen:
         )
         cv2.putText(
             axial_map_overlay,
-            "Sim K1: "+ str(sims[0]) + "D @" + str(sims[2]) + " K2: "+ str(sims[1])+ "D @"+ str(sims[2] + 90),
+            "Sim K1: "+ str(sims[0]) + "D @" + str(sims[2]) + " K2: "+ str(sims[1])+ "D @"+ str((sims[2] + 90) % 180),
             (5, 20),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.5,
