@@ -36,6 +36,23 @@ def detect_mires_img_proc(image_seg, image_orig, center,
     # centroids with {(x,y)} order and has length as number of angles
     return image_cent_list, center, [image_or, image_and, image_mp]
 
+def fetch_points_to_mask(r_pixels, coords, flagged_points, n_mires, start_angle, end_angle, jump):
+    points_to_mask = []
+    mean_radii = []
+    for mire in range(n_mires):
+        mean_radii.append(np.nanmean(r_pixels[mire]))
+
+    for mire in range(n_mires):
+        current_set = []
+        for idx, angle in enumerate(np.arange(start_angle, end_angle, jump)):
+            if (mire, angle) in flagged_points:
+                current_set.append(angle)
+            else:
+                if len(current_set) > Constants.POSTPROCESS_MASKING_THRESHOLD * jump:
+                    points_to_mask.append((min(current_set), max(current_set), mire, mean_radii[mire]))
+                current_set = []
+    return points_to_mask
+
 def clean_points(image_cent_list, image_gray, image_name, center, mire_loc_method,
     n_mires=20, jump=2, start_angle=0, end_angle=360, output_folder="out",
 ):
@@ -102,8 +119,10 @@ def clean_points(image_cent_list, image_gray, image_name, center, mire_loc_metho
     cv2.imwrite(output_folder+"/" + image_name + "/" + image_name + "_mp_clean.png", image_gray)
 
     logging.info("Cleaning Done!")
+
+    points_to_mask = fetch_points_to_mask(r_pixels, coords_fixed, flagged_points, n_mires - 1, start_angle, end_angle, jump)
     # note that coords_fixed has order of coords as {(y,x)}
-    return r_pixels, flagged_points, coords_fixed, image_gray
+    return r_pixels, flagged_points, coords_fixed, image_gray, points_to_mask
 
 def remove_outliers(r_pixels, mire_loc_method, start_angle, end_angle, jump, n_mires):
     flagged_points = []

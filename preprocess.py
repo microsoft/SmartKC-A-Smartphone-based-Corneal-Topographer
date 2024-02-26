@@ -133,7 +133,7 @@ def preprocess_image(
     # save gray-scale image
     image_gray = cv2.cvtColor(image_crop, cv2.COLOR_BGR2GRAY)
     center = (image_gray.shape[1] // 2, image_gray.shape[0] // 2)
-    return image_gray, center
+    return image_gray, center, image_crop
 
     #cv2.imwrite(output_folder + "/" + image_name + "/" + image_name + "_out_gray.png", image_gray)
     #cv2.imwrite("./" + image_name + "_out_gray.png", image_gray)
