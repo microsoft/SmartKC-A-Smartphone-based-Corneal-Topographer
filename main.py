@@ -148,6 +148,8 @@ def plot_and_save_corneal_surface(x, y, z, output, save = True):
     df.to_csv(output + "corneal_surface.csv", index=False)
     plt.figure()
     ax = plt.axes(projection = '3d')
+    z_max = np.nanmax(z)
+    z = z_max - z
     ax.scatter3D(x, y, z)
     plt.savefig(output + "corneal_surface_3d.png")
     plt.close()
@@ -340,7 +342,7 @@ class corneal_top_gen:
         # 1 Using center of central mire, or
         # 2 Centroid of Segmented Image (compute it's center of mass)
         # 3 User selects center manually if center = (-1, -1)
-        image_gray, center = preprocess_image(
+        image_gray, center, img_color = preprocess_image(
             base_dir,
             image_name,
             center,
@@ -389,7 +391,7 @@ class corneal_top_gen:
         # cv2.imwrite(self.output+"/" + image_name + "/" + image_name + "_mp.png", image_mp)
 
         # clean points
-        r_pixels, flagged_points, coords, image_mp = clean_points(
+        r_pixels, flagged_points, coords, image_mp, points_to_mask = clean_points(
             image_cent_list, image_gray.copy(), image_name, center, mire_loc_method, self.n_mires, self.jump, self.start_angle, self.end_angle, 
             output_folder=self.output, 
         )
@@ -501,7 +503,23 @@ class corneal_top_gen:
             self.output+"/" + image_name + "/" + image_name + "_axial_map_overlay.png",
             axial_map_overlay,
         )
-    
+
+        # mask points_to_mask on the tan_map_overlay and axial_map_overlay
+        if mire_loc_method == Constants.GRAPH_CLUSTER_LOC_METHOD:
+            for point in points_to_mask:
+                mask_start, mask_end, _ , radius = point
+                for angle in range(mask_start, mask_end):
+                    x, y = center[0] + int(radius * np.cos(np.radians(angle))), center[1] + int(radius * np.sin(np.radians(angle)))
+                    x,y = int(x), int(y)
+                    cv2.circle(tan_map_overlay, (x, y), Constants.MASK_LENGTH, (128, 128, 128), -1)
+                    cv2.circle(axial_map_overlay, (x, y), Constants.MASK_LENGTH, (128, 128, 128), -1)
+                    cv2.circle(img_color, (x, y), Constants.MASK_LENGTH, (128, 128, 128), -1)
+
+            cv2.imwrite(self.output + "/" + image_name + "/" + image_name + "_masked_img.png", img_color)        
+            cv2.imwrite(self.output + "/" + image_name + "/" + image_name + "_tan_map_masked.png", tan_map_overlay)
+            cv2.imwrite(self.output + "/" + image_name + "/" + image_name + "_axial_map_masked.png", axial_map_overlay)
+
+
         logging.warning("Test Complete!")
         return errors, sims, [image_gray, image_seg, image_mp, tan_map_overlay, axial_map_overlay]
 
@@ -577,17 +595,30 @@ if __name__ == "__main__":
                 
                 # Open only if csv available
                 if (os.path.exists(csv_file_path)):
+                    logging.info("Found csv file")
                     # try to read values
                     with open(csv_file_path, newline='') as csvfile:
                         reader = csv.DictReader(csvfile)
                         for row in reader:
                             if row["image_name"] == filename:
-                                f_len = row['focal_length']
+                                f_len = float(row['focal_length'])
                                 sensor_dims = list(map(float, row['camera_physical_size'].split('x')))
                                 sensor_dims.sort()
                                 sensor_dims = tuple(sensor_dims)
-                                marked_center = list(map(float, row['marked_center'].split('|')))
+                                try:
+                                    marked_center = list(map(float, row['marked_center'].split('|')))
+                                except:
+                                    marked_center = None
                                 break
+                else:
+                    assert args.camera_params is not None, "Camera params not provided"
+                    logging.info("csv file not found, reseting to command line args")
+                    sensor_dims = (
+                        float(args.camera_params.split()[0]),
+                        float(args.camera_params.split()[1]),
+                    )  # "4.27, 5.68, 4.25"
+                    f_len = float(args.camera_params.split()[2]) # focal length of the camera
+
                 
                 if args.centers_filename is not None:
                     center = read_center(base_dir+args.centers_filename, filename)
