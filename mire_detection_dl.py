@@ -3,7 +3,7 @@ import cv2
 from get_center.get_center import colors_list
 from get_center.get_center import segment_and_get_center
 import os
-
+from constants import Constants
 from utils import generate_colored_image
 
 def detect_mires_mask_dl(image_gray, mask_output_dir):
@@ -230,7 +230,8 @@ def detect_mires_from_mask(mask, center, n_mires, src_image = None, num_angles =
 
 def get_mask(cropped_img):
     script_dir = os.path.dirname(__file__)
-    get_center_obj = segment_and_get_center(script_dir+'/get_center/segment_and_get_center_epoch_557_iter_14.pkl')
+    get_center_obj = segment_and_get_center(os.path.join(script_dir, Constants.DL_MODEL_FILE))
+    # get_center_obj = segment_and_get_center(script_dir+'/get_center/segment_and_get_center_epoch_557_iter_14.pkl')
     mask, _ = get_center_obj.segment(cropped_img)
     mask = mask.astype(int)
     return mask

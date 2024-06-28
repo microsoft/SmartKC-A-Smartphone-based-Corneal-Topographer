@@ -16,7 +16,8 @@ class Constants:
         "DOWNSAMPLE" : True,
         "BLUR" : True
     }
-    DL_MODEL_FILE = "./get_center/segment_and_get_center_epoch_557_iter_14.pkl"
+    # DL_MODEL_FILE = "./get_center/segment_and_get_center_epoch_557_iter_14.pkl"
+    DL_MODEL_FILE = "./get_center/segment_and_get_center_epoch_598_iter_12_updated.pkl"
     GRAPH_CLUSTER_MIN_CONNECTED_COMPONENT_SIZE = 10
 
     POSTPROCESS_MASKING_THRESHOLD = 20
